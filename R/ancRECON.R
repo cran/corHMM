@@ -6,7 +6,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 	
 	#Note: Does not like zero branches at the tips. Here I extend these branches by just a bit:
 	phy$edge.length[phy$edge.length<=1e-5]=1e-5
-
+	
 	if(hrm==FALSE){
 		if(ntraits==1){
 			data.sort<-data.frame(data[,charnum+1],data[,charnum+1],row.names=data[,1])
@@ -88,8 +88,24 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				if(x[i]==2){liks[i,1:10]=1}
 			}
 		}
+		if (rate.cat == 6){
+			liks <- matrix(0, nb.tip + nb.node, k*rate.cat)
+			for(i in 1:nb.tip){
+				if(x[i]==0){liks[i,c(1,3,5,7,9,11)]=1}
+				if(x[i]==1){liks[i,c(2,4,6,8,10,12)]=1}
+				if(x[i]==2){liks[i,1:12]=1}
+			}
+		}
+		if (rate.cat == 7){
+			liks <- matrix(0, nb.tip + nb.node, k*rate.cat)
+			for(i in 1:nb.tip){
+				if(x[i]==0){liks[i,c(1,3,5,7,9,11,13)]=1}
+				if(x[i]==1){liks[i,c(2,4,6,8,10,12,14)]=1}
+				if(x[i]==2){liks[i,1:14]=1}
+			}
+		}
 		Q <- matrix(0, k*rate.cat, k*rate.cat)
-		tranQ <- matrix(0,  k*rate.cat, k*rate.cat)
+		tranQ <- matrix(0, k*rate.cat, k*rate.cat)
 	}
 	if(hrm==FALSE){
 		#Imported from Jeffs rayDISC -- will clean up later, but for now, it works fine:
@@ -194,7 +210,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 	phy <- reorder(phy, "pruningwise")
 	TIPS <- 1:nb.tip
 	anc <- unique(phy$edge[,1])
-
+	
 	if(method=="joint"){
 		lik.states<-numeric(nb.tip + nb.node)
 		comp<-matrix(0,nb.tip + nb.node,ncol(liks))
@@ -241,7 +257,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 						liks[focal, ] <- root.state * equil.root
 					}
 					else{
-						liks[focal, ] <- root.p
+						liks[focal, ] <- root.state * root.p
 					}
 				}
 				liks[focal, ] <- liks[focal,] / sum(liks[focal,])
@@ -328,7 +344,8 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 		#Enter the root defined root probabilities if they are supplied by the user:
 		if(is.numeric(root.p)){
 			root <- nb.tip + 1L	
-			liks.down[root, ] <- root.p
+			liks.down[root, ] <- root.p * liks.down[root, ]
+			liks.down[root, ] <- liks.down[root,] / sum(liks.down[root, ])
 		}
 		#The up-pass 
 		liks.up<-liks
@@ -364,34 +381,6 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				liks.up[focal,] <- v/comp[focal]
 			}
 		}
-		#Now get the states for the tips (will do, not available for general use):
-		for(i in 1:length(TIPS)){
-			focal <- TIPS[i]
-			#Gets mother and sister information of focal:
-			focalRow<-which(phy$edge[,2]==focal)
-			motherRow<-which(phy$edge[,1]==phy$edge[focalRow,1])
-			motherNode<-phy$edge[focalRow,1]
-			desNodes<-phy$edge[motherRow,2]
-			sisterNodes<-desNodes[(which(!desNodes==focal))]
-			sisterRows<-which(phy$edge[,2]%in%sisterNodes==TRUE)
-			#If the mother is not the root then you are calculating the probability of the being in either state.
-			#But note we are assessing the reverse transition, j to i, rather than i to j, so we transpose Q to carry out this calculation:
-			if(motherNode!=root){
-				v <- expm(tranQ * phy$edge.length[which(phy$edge[,2]==motherNode)], method=c("Ward77")) %*% liks.up[motherNode,]
-			}
-			#If the mother is the root then just use the marginal. This can also be the prior. 
-			#But for now we are just going to use the marginal at the root -- it is unclear what Mesquite does.
-			else{
-				v <- equil.root
-			}
-			#Now calculate the probability that each sister is in either state. Sister can be more than 1 when the node is a polytomy. 
-			#This is essentially calculating the product of the mothers probability and the sisters probability:
-			for (sisterIndex in sequence(length(sisterRows))){
-				v <- v*expm(Q * phy$edge.length[sisterRows[sisterIndex]], method=c("Ward77")) %*% liks.down[sisterNodes[sisterIndex],]
-			}
-			comp[focal] <- sum(v)
-			liks.up[focal,] <- v/comp[focal]
-		}
 		#The final pass
 		liks.final<-liks
 		comp <- numeric(nb.tip + nb.node)
@@ -399,17 +388,6 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 		for (i in seq(from = 1, length.out = nb.node-1)) { 
 			#the ancestral node at row i is called focal
 			focal <- anc[i]
-			focalRows<-which(phy$edge[,2]==focal)
-			#Now you are assessing the change along the branch subtending the focal by multiplying the probability of 
-			#everything at and above focal by the probability of the mother and all the sisters given time t:
-			v <- liks.down[focal,]*expm(tranQ * phy$edge.length[focalRows], method=c("Ward77")) %*% liks.up[focal,]
-			comp[focal] <- sum(v)
-			liks.final[focal, ] <- v/comp[focal]
-		}
-		#Now get the states for the tips (will do, not available for general use):
-		for (i in seq(from = 1, length.out = length(TIPS))) { 
-			#the ancestral node at row i is called focal
-			focal <- TIPS[i]
 			focalRows<-which(phy$edge[,2]==focal)
 			#Now you are assessing the change along the branch subtending the focal by multiplying the probability of 
 			#everything at and above focal by the probability of the mother and all the sisters given time t:
@@ -460,7 +438,8 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				liks[root, ] <- liks[root,] / sum(liks[root,])
 			}
 			else{
-				liks[root, ] <- root.p
+				liks[root, ] <- liks[root,] * root.p
+				liks[root, ] <- liks[root,] / sum(liks[root,])
 			}
 		}
 		#Reports the probabilities for all internal nodes as well as tips:

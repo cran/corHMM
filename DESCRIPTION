@@ -1,6 +1,6 @@
 Package: corHMM
-Version: 1.10
-Date: 2013-4-30
+Version: 1.11
+Date: 2013-6-13
 Title: Analysis of binary character evolution
 Author: Jeremy M. Beaulieu <jbeaulieu@nimbios.org>, Jeffrey C. Oliver
         <jeffreycoliver@gmail.com>, Brian O'Meara <bomeara@utk.edu>
@@ -13,10 +13,7 @@ Description: Fits a hidden rates model that allows different transition
         other functions for evaluating models of binary character
         evolution.
 License: GPL (>= 2)
-Repository: CRAN
-Repository/R-Forge/Project: corhmm
-Repository/R-Forge/Revision: 120
-Repository/R-Forge/DateTimeStamp: 2013-04-30 16:13:02
-Date/Publication: 2013-05-13 18:29:49
-Packaged: 2013-05-13 15:49:42 UTC; jbeaulieu
+Packaged: 2013-06-14 12:41:17 UTC; jbeaulieu
 NeedsCompilation: no
+Repository: CRAN
+Date/Publication: 2013-06-14 15:45:07

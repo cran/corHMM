@@ -38,6 +38,14 @@ rate.mat.maker<-function(rate.cat, hrm=TRUE, ntraits=NULL, nstates=NULL, model=c
 		if (rate.cat == 5){
 			rownames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)")
 			colnames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)")
+		}
+		if (rate.cat == 6){
+			rownames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)")
+			colnames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)")
+		}
+		if (rate.cat == 7){
+			rownames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)","(0,R7)","(1,R7)")
+			colnames(rate.mat.index) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)","(0,R7)","(1,R7)")
 		}		
 	}
 	if(hrm==FALSE){

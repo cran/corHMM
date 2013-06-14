@@ -24,7 +24,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			cat("No model selected for \'node.states\'. Will perform marginal ancestral state estimation.\n")
 		}
 	}
-
+	
 	# Checks to make sure phy & data have same taxa. sFixes conflicts (see match.tree.data function).
 	matching <- match.tree.data(phy,data) 
 	data <- matching$data
@@ -46,22 +46,22 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			return(obj)
 		}
 	}
-
+	
 	#Creates the data structure and orders the rows to match the tree. 
 	phy$edge.length[phy$edge.length<=1e-5]=1e-5
 	data.sort <- data.frame(data[,2], data[,2],row.names=data[,1])
 	data.sort <- data.sort[phy$tip.label,]
-
+	
 	counts <- table(data.sort[,1])
 	levels <- levels(as.factor(data.sort[,1]))
 	cols <- as.factor(data.sort[,1])
 	cat("State distribution in data:\n")
 	cat("States:",levels,"\n",sep="\t")
 	cat("Counts:",counts,"\n",sep="\t")
-
+	
 	#Some initial values for use later
 	k=2
-
+	
 	# Check to make sure values are reasonable (i.e. non-negative)
 	if(ub < 0){
 		ub <- 100
@@ -98,7 +98,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			cat("Calculating likelihood from a set of fixed parameters", "\n")
 			out<-NULL
 			est.pars<-p
-			out$objective<-dev.corhmm(est.pars,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=model.set.final$root.p)
+			out$objective<-dev.corhmm(est.pars,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 		}
 		else{
 			cat("Initializing...", "\n")
@@ -134,7 +134,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			cat("Calculating likelihood from a set of fixed parameters", "\n")
 			out<-NULL
 			out$solution<-p
-			out$objective<-dev.corhmm(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=model.set.final$root.p)
+			out$objective<-dev.corhmm(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 			loglik <- -out$objective
 			est.pars<-out$solution
 		}
@@ -201,6 +201,31 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 									starts[26] <- pp.tmp[order(pp.tmp)][5]	
 								}
 							}
+							if(rate.cat == 6){
+								try(par.order <- starts[3] > starts[9] | starts[9] > starts[15] | starts[15] > starts[21] | starts[21] > starts[27] | starts[27] > starts[32])
+								if(!is.na(par.order)){
+									pp.tmp <- c(starts[3],starts[9],starts[15],starts[21],starts[27],starts[32])
+									starts[3] <- pp.tmp[order(pp.tmp)][1]
+									starts[9] <- pp.tmp[order(pp.tmp)][2]
+									starts[15] <- pp.tmp[order(pp.tmp)][3]
+									starts[21] <- pp.tmp[order(pp.tmp)][4]
+									starts[27] <- pp.tmp[order(pp.tmp)][5]
+									starts[32] <- pp.tmp[order(pp.tmp)][6]
+								}
+							}
+							if(rate.cat == 7){
+								try(par.order <- starts[3] > starts[9] | starts[9] > starts[15] | starts[15] > starts[21] | starts[21] > starts[27] | starts[27] > starts[33] | starts[33] > starts[38])
+								if(!is.na(par.order)){
+									pp.tmp <- c(starts[3],starts[9],starts[15],starts[21],starts[27],starts[33],starts[38])
+									starts[3] <- pp.tmp[order(pp.tmp)][1]
+									starts[9] <- pp.tmp[order(pp.tmp)][2]
+									starts[15] <- pp.tmp[order(pp.tmp)][3]
+									starts[21] <- pp.tmp[order(pp.tmp)][4]
+									starts[27] <- pp.tmp[order(pp.tmp)][5]
+									starts[33] <- pp.tmp[order(pp.tmp)][6]
+									starts[38] <- pp.tmp[order(pp.tmp)][7]
+								}
+							}						
 							out.alt = nloptr(x0=rep(starts, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 							tmp[,1] = out.alt$objective
 							tmp[,2:(model.set.final$np+1)] = starts
@@ -269,6 +294,31 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 								starts[21] <- pp.tmp[order(pp.tmp)][4]
 								starts[26] <- pp.tmp[order(pp.tmp)][5]
 							}
+						}
+						if(rate.cat == 6){
+							try(par.order <- starts[3] > starts[9] | starts[9] > starts[15] | starts[15] > starts[21] | starts[21] > starts[27] | starts[27] > starts[32])
+							if(!is.na(par.order)){
+								pp.tmp <- c(starts[3],starts[9],starts[15],starts[21],starts[27],starts[32])
+								starts[3] <- pp.tmp[order(pp.tmp)][1]
+								starts[9] <- pp.tmp[order(pp.tmp)][2]
+								starts[15] <- pp.tmp[order(pp.tmp)][3]
+								starts[21] <- pp.tmp[order(pp.tmp)][4]
+								starts[27] <- pp.tmp[order(pp.tmp)][5]
+								starts[32] <- pp.tmp[order(pp.tmp)][6]
+							}
+						}
+						if(rate.cat == 7){
+							try(par.order <- starts[3] > starts[9] | starts[9] > starts[15] | starts[15] > starts[21] | starts[21] > starts[27] | starts[27] > starts[33] | starts[33] > starts[38])
+							if(!is.na(par.order)){
+								pp.tmp <- c(starts[3],starts[9],starts[15],starts[21],starts[27],starts[33],starts[38])
+								starts[3] <- pp.tmp[order(pp.tmp)][1]
+								starts[9] <- pp.tmp[order(pp.tmp)][2]
+								starts[15] <- pp.tmp[order(pp.tmp)][3]
+								starts[21] <- pp.tmp[order(pp.tmp)][4]
+								starts[27] <- pp.tmp[order(pp.tmp)][5]
+								starts[33] <- pp.tmp[order(pp.tmp)][6]
+								starts[38] <- pp.tmp[order(pp.tmp)][7]
+							}
 						}						
 						out = nloptr(x0=rep(starts, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 						tmp[,1] = out$objective
@@ -295,7 +345,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			}			
 		}
 	}
-
+	
 	#Starts the summarization process:
 	cat("Finished. Inferring ancestral states using", node.states, "reconstruction.","\n")
 	
@@ -376,6 +426,24 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			}
 		}
 	}
+	if (rate.cat == 6){
+		rownames(solution) <- rownames(solution.se) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)")
+		colnames(solution) <- colnames(solution.se) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)")
+		if (is.character(node.states)) {
+			if (node.states == "marginal" || node.states == "scaled"){	
+				colnames(lik.anc$lik.anc.states) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)")
+			}
+		}
+	}
+	if (rate.cat == 7){
+		rownames(solution) <- rownames(solution.se) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)","(0,R7)","(1,R7)")
+		colnames(solution) <- colnames(solution.se) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)","(0,R7)","(1,R7)")
+		if (is.character(node.states)) {
+			if (node.states == "marginal" || node.states == "scaled"){	
+				colnames(lik.anc$lik.anc.states) <- c("(0,R1)","(1,R1)","(0,R2)","(1,R2)","(0,R3)","(1,R3)","(0,R4)","(1,R4)","(0,R5)","(1,R5)","(0,R6)","(1,R6)","(0,R7)","(1,R7)")
+			}
+		}
+	}
 	obj = list(loglik = loglik, AIC = -2*loglik+2*model.set.final$np,AICc = -2*loglik+(2*model.set.final$np*(nb.tip/(nb.tip-model.set.final$np-1))),rate.cat=rate.cat,solution=solution, solution.se=solution.se, index.mat=model.set.final$index.matrix, opts=opts, data=data.sort, phy=phy, states=lik.anc$lik.anc.states, tip.states=tip.states, iterations=out$iterations, eigval=eigval, eigvect=eigvect) 
 	class(obj)<-"corhmm"
 	return(obj)
@@ -419,7 +487,7 @@ dev.corhmm <- function(p,phy,liks,Q,rate,root.p) {
 	#Obtain an object of all the unique ancestors
 	anc <- unique(phy$edge[,1])
 	k.rates <- dim(Q)[2] / 2
-
+	
 	if (any(is.nan(p)) || any(is.infinite(p))) return(1000000)
 	
 	Q[] <- c(p, 0)[rate]
@@ -474,6 +542,22 @@ dev.corhmm <- function(p,phy,liks,Q,rate,root.p) {
 			}
 		}		
 	}
+	if(k.rates == 6){
+		try(par.order <- p[3] > p[9] | p[9] > p[15] | p[15] > p[21] | p[21] > p[27] | p[27] > p[32])
+		if(!is.na(par.order)){
+			if(par.order == TRUE){
+				return(1000000)
+			}
+		}		
+	}
+	if(k.rates == 7){
+		try(par.order <- p[3] > p[9] | p[9] > p[15] | p[15] > p[21] | p[21] > p[27] | p[27] > p[33] | p[33] > p[38])
+		if(!is.na(par.order)){
+			if(par.order == TRUE){
+				return(1000000)
+			}
+		}		
+	}	
 	#Specifies the root:
 	root <- nb.tip + 1L
 	#If any of the logs have NAs restart search:
@@ -518,11 +602,11 @@ rate.cat.set<-function(phy,data.sort,rate.cat){
 	nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
 	obj$rate.cat<-rate.cat
-
+	
 	rate<-rate.mat.maker(hrm=TRUE,rate.cat=rate.cat)
 	index.matrix<-rate
 	rate[is.na(rate)]<-max(rate,na.rm=TRUE)+1
-
+	
 	#Makes a matrix of tip states and empty cells corresponding 
 	#to ancestral nodes during the optimization process.	
 	x <- data.sort[,1]
@@ -574,6 +658,24 @@ rate.cat.set<-function(phy,data.sort,rate.cat){
 			if(x[i]==0){liks[i,c(1,3,5,7,9)]=1}
 			if(x[i]==1){liks[i,c(2,4,6,8,10)]=1}
 			if(x[i]==2){liks[i,1:10]=1}
+		}
+		Q <- matrix(0, k*rate.cat, k*rate.cat)
+	}
+	if (rate.cat == 6){
+		liks <- matrix(0, nb.tip + nb.node, k*rate.cat)
+		for(i in 1:nb.tip){
+			if(x[i]==0){liks[i,c(1,3,5,7,9,11)]=1}
+			if(x[i]==1){liks[i,c(2,4,6,8,10,12)]=1}
+			if(x[i]==2){liks[i,1:12]=1}
+		}
+		Q <- matrix(0, k*rate.cat, k*rate.cat)
+	}
+	if (rate.cat == 7){
+		liks <- matrix(0, nb.tip + nb.node, k*rate.cat)
+		for(i in 1:nb.tip){
+			if(x[i]==0){liks[i,c(1,3,5,7,9,11,13)]=1}
+			if(x[i]==1){liks[i,c(2,4,6,8,10,12,14)]=1}
+			if(x[i]==2){liks[i,1:14]=1}
 		}
 		Q <- matrix(0, k*rate.cat, k*rate.cat)
 	}
