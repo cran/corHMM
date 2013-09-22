@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu
 
-corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "marginal","scaled"), optim.method=c("subplex"), p=NULL, root.p=NULL, ip=NULL, nstarts=10, n.cores=NULL, lb=0, ub=100, diagn=TRUE){
+corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "marginal","scaled"), optim.method=c("subplex"), p=NULL, root.p=NULL, ip=NULL, nstarts=10, n.cores=NULL, lb=0, ub=100, diagn=FALSE){
 	
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
@@ -120,7 +120,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
 			lower = rep(lb, model.set.final$np)
 			upper = rep(ub, model.set.final$np)
-			cat("Finished. Begin thorough search...", "\n")
+			cat("Finished. Beginning thorough search...", "\n")
 			Domains<-cbind(lower,upper)
 			starting.values=rep(init$solution,length.out = model.set.final$np)
 			out<-genoud(fn=dev.corhmm, starting.values=starting.values, nvars=model.set.final$np, print.level=0, boundary.enforcement=2, Domains=Domains, wait.generations=20, max.generations=100, pop.size=1000, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
@@ -143,7 +143,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			#If a user-specified starting value(s) is supplied:
 			if(is.null(ip)){
 				if(is.null(n.cores)){
-					cat("Begin thorough optimization search -- performing", nstarts, "random restarts", "\n")
+					cat("Beginning thorough optimization search -- performing", nstarts, "random restarts", "\n")
 					#If the analysis is to be run a single processor:
 					if(is.null(n.cores)){
 						#Sets parameter settings for random restarts by taking the parsimony score and dividing
@@ -246,7 +246,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 				else{
 					#Sets parameter settings for random restarts by taking the parsimony score and dividing
 					#by the total length of the tree
-					cat("Begin thorough optimization search -- performing", nstarts, "random restarts", "\n")
+					cat("Beginning thorough optimization search -- performing", nstarts, "random restarts", "\n")
 					dat<-as.matrix(data.sort)
 					dat<-phyDat(dat,type="USER", levels=c("0","1"))
 					par.score<-parsimony(phy, dat, method="fitch")/2
@@ -337,7 +337,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 				}
 			}
 			else{
-				cat("Begin subplex optimization routine -- Starting value(s):", ip, "\n")
+				cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
 				ip=ip
 				out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 				loglik <- -out$objective

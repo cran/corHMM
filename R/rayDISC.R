@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu & Jeffrey C. Oliver
 
-rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0,ub=100, diagn=TRUE){
+rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0,ub=100, diagn=FALSE){
 
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
@@ -111,7 +111,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 			#Sets parameter settings for random restarts by taking the parsimony score and dividing
 			#by the total length of the tree
 			model.set.init<-rate.cat.set.oneT(phy=phy,data=workingData,model="ER",charnum=charnum)
-			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 			dat<-as.matrix(workingData)
 			dat<-phyDat(dat,type="USER", levels=levels(as.factor(workingData[,1])))
 			par.score<-parsimony(phy, dat, method="fitch")
@@ -124,7 +124,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 			lower.init = rep(lb, model.set.init$np)
 			upper.init = rep(ub, model.set.init$np)
 			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.raydisc, lb=lower.init, ub=upper.init, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
-			cat("Finished. Begin thorough search...", "\n")
+			cat("Finished. Beginning thorough search...", "\n")
 			lower = rep(lb, model.set.final$np)
 			upper = rep(ub, model.set.final$np)
 			out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
@@ -133,8 +133,8 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 		}
 		#If a user-specified starting value(s) is supplied:
 		else{
-			cat("Begin subplex optimization routine -- Starting value(s):", ip, "\n")
-			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+			cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
+			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts)
 			loglik <- -out$objective
 			est.pars<-out$solution

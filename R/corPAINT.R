@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu
 
-corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, diagn=TRUE){
+corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, diagn=FALSE){
 	
 	if(is.null(phy$node.label)==TRUE){
 		stop("There are no node label designations")
@@ -110,7 +110,7 @@ corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"
 			lower.init = rep(lb, model.set.init$np)
 			upper.init = rep(ub, model.set.init$np)
 			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.corpaint, lb=lower.init, ub=upper.init, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,regimes=regimes,root.p=root.p)
-			cat("Finished. Begin thorough search...", "\n")
+			cat("Finished. Beginning thorough search...", "\n")
 			lower = rep(lb, model.set.final$np)
 			upper = rep(ub, model.set.final$np)	
 			out = nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.corpaint, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,regimes=regimes,root.p=root.p)
@@ -119,7 +119,7 @@ corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"
 		}
 		#If a user-specified starting value(s) is supplied:
 		else{
-			cat("Begin subplex optimization routine -- Starting value(s):", ip, "\n")
+			cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
 			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
 			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corpaint, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,regimes=regimes,root.p=root.p)
 			loglik <- -out$objective
@@ -575,6 +575,8 @@ ancRECON.paint <- function(phy, data, p, method=c("joint", "marginal", "scaled")
 			for(i in 1:nb.tip){
 				if(is.na(x[i])){
 					x[i]=2
+				}
+				if(is.na(y[i])){
 					y[i]=2
 				}
 			}
@@ -583,6 +585,10 @@ ancRECON.paint <- function(phy, data, p, method=c("joint", "marginal", "scaled")
 				if(x[i]==0 & y[i]==1){liks[i,2]=1}
 				if(x[i]==1 & y[i]==0){liks[i,3]=1}
 				if(x[i]==1 & y[i]==1){liks[i,4]=1}
+				if(x[i]==2 & y[i]==0){liks[i,c(1,3)]=1}
+				if(x[i]==2 & y[i]==1){liks[i,c(2,4)]=1}
+				if(x[i]==0 & y[i]==2){liks[i,c(1,2)]=1}
+				if(x[i]==1 & y[i]==2){liks[i,c(3,4)]=1}
 				if(x[i]==2 & y[i]==2){liks[i,1:4]=1}
 			}
 		}
@@ -606,7 +612,11 @@ ancRECON.paint <- function(phy, data, p, method=c("joint", "marginal", "scaled")
 			for(i in 1:nb.tip){
 				if(is.na(x[i])){
 					x[i]=2
+				}
+				if(is.na(y[i])){
 					y[i]=2
+				}
+				if(is.na(z[i])){
 					z[i]=2
 				}
 			}
@@ -619,6 +629,31 @@ ancRECON.paint <- function(phy, data, p, method=c("joint", "marginal", "scaled")
 				if(x[i]==1 & y[i]==0 & z[i]==1){liks[i,6]=1}
 				if(x[i]==0 & y[i]==1 & z[i]==1){liks[i,7]=1}
 				if(x[i]==1 & y[i]==1 & z[i]==1){liks[i,8]=1}
+				#If x is ambiguous but the rest are not:
+				if(x[i]==2 & y[i]==0 & z[i]==0){liks[i,c(1,2)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==0){liks[i,c(3,5)]=1}
+				if(x[i]==2 & y[i]==0 & z[i]==1){liks[i,c(4,6)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==1){liks[i,c(7,8)]=1}
+				#If y is ambiguous but the rest are not:
+				if(x[i]==0 & y[i]==2 & z[i]==0){liks[i,c(1,3)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==0){liks[i,c(2,5)]=1}
+				if(x[i]==0 & y[i]==2 & z[i]==1){liks[i,c(4,7)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==1){liks[i,c(6,8)]=1}
+				#If z is ambiguous but the rest are not:
+				if(x[i]==0 & y[i]==0 & z[i]==2){liks[i,c(1,4)]=1}
+				if(x[i]==0 & y[i]==1 & z[i]==2){liks[i,c(3,7)]=1}
+				if(x[i]==1 & y[i]==0 & z[i]==2){liks[i,c(2,6)]=1}
+				if(x[i]==1 & y[i]==1 & z[i]==2){liks[i,c(5,8)]=1}
+				#If x and y is ambiguous but z is not:
+				if(x[i]==2 & y[i]==2 & z[i]==0){liks[i,c(1,2,3,5)]=1}
+				if(x[i]==2 & y[i]==2 & z[i]==1){liks[i,c(4,6,7,8)]=1}
+				#If x and z is ambiguous but y is not:
+				if(x[i]==2 & y[i]==0 & z[i]==2){liks[i,c(1,2,4,6)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==2){liks[i,c(3,5,7,8)]=1}
+				#If y and z is ambiguous but x is not:
+				if(x[i]==0 & y[i]==2 & z[i]==2){liks[i,c(1,3,4,7)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==2){liks[i,c(2,5,6,8)]=1}
+				#All states are ambiguous:			
 				if(x[i]==2 & y[i]==2 & z[i]==2){liks[i,1:8]=1}
 			}
 		}

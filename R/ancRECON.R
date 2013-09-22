@@ -155,6 +155,8 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 			for(i in 1:nb.tip){
 				if(is.na(x[i])){
 					x[i]=2
+				}
+				if(is.na(y[i])){
 					y[i]=2
 				}
 			}
@@ -163,6 +165,10 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				if(x[i]==0 & y[i]==1){liks[i,2]=1}
 				if(x[i]==1 & y[i]==0){liks[i,3]=1}
 				if(x[i]==1 & y[i]==1){liks[i,4]=1}
+				if(x[i]==2 & y[i]==0){liks[i,c(1,3)]=1}
+				if(x[i]==2 & y[i]==1){liks[i,c(2,4)]=1}
+				if(x[i]==0 & y[i]==2){liks[i,c(1,2)]=1}
+				if(x[i]==1 & y[i]==2){liks[i,c(3,4)]=1}
 				if(x[i]==2 & y[i]==2){liks[i,1:4]=1}
 			}
 		}
@@ -186,7 +192,11 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 			for(i in 1:nb.tip){
 				if(is.na(x[i])){
 					x[i]=2
+				}
+				if(is.na(y[i])){
 					y[i]=2
+				}
+				if(is.na(z[i])){
 					z[i]=2
 				}
 			}
@@ -199,6 +209,31 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				if(x[i]==1 & y[i]==0 & z[i]==1){liks[i,6]=1}
 				if(x[i]==0 & y[i]==1 & z[i]==1){liks[i,7]=1}
 				if(x[i]==1 & y[i]==1 & z[i]==1){liks[i,8]=1}
+				#If x is ambiguous but the rest are not:
+				if(x[i]==2 & y[i]==0 & z[i]==0){liks[i,c(1,2)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==0){liks[i,c(3,5)]=1}
+				if(x[i]==2 & y[i]==0 & z[i]==1){liks[i,c(4,6)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==1){liks[i,c(7,8)]=1}
+				#If y is ambiguous but the rest are not:
+				if(x[i]==0 & y[i]==2 & z[i]==0){liks[i,c(1,3)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==0){liks[i,c(2,5)]=1}
+				if(x[i]==0 & y[i]==2 & z[i]==1){liks[i,c(4,7)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==1){liks[i,c(6,8)]=1}
+				#If z is ambiguous but the rest are not:
+				if(x[i]==0 & y[i]==0 & z[i]==2){liks[i,c(1,4)]=1}
+				if(x[i]==0 & y[i]==1 & z[i]==2){liks[i,c(3,7)]=1}
+				if(x[i]==1 & y[i]==0 & z[i]==2){liks[i,c(2,6)]=1}
+				if(x[i]==1 & y[i]==1 & z[i]==2){liks[i,c(5,8)]=1}
+				#If x and y is ambiguous but z is not:
+				if(x[i]==2 & y[i]==2 & z[i]==0){liks[i,c(1,2,3,5)]=1}
+				if(x[i]==2 & y[i]==2 & z[i]==1){liks[i,c(4,6,7,8)]=1}
+				#If x and z is ambiguous but y is not:
+				if(x[i]==2 & y[i]==0 & z[i]==2){liks[i,c(1,2,4,6)]=1}
+				if(x[i]==2 & y[i]==1 & z[i]==2){liks[i,c(3,5,7,8)]=1}
+				#If y and z is ambiguous but x is not:
+				if(x[i]==0 & y[i]==2 & z[i]==2){liks[i,c(1,3,4,7)]=1}
+				if(x[i]==1 & y[i]==2 & z[i]==2){liks[i,c(2,5,6,8)]=1}
+				#All states are ambiguous:			
 				if(x[i]==2 & y[i]==2 & z[i]==2){liks[i,1:8]=1}
 			}
 		}
@@ -293,7 +328,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 			lik.states[des] <- comp[des,tmp]
 		}
 		#Outputs likeliest tip states
-		obj$lik.tip.states <- lik.states[TIPS]
+		obj$lik.tip.states <- NULL
 		#Outputs likeliest node states
 		obj$lik.anc.states <- lik.states[-TIPS]
 	}
@@ -443,7 +478,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 			}
 		}
 		#Reports the probabilities for all internal nodes as well as tips:
-		obj$lik.tip.states <- liks[TIPS,]
+		obj$lik.tip.states <- NULL
 		#Outputs likeliest node states
 		obj$lik.anc.states <- liks[-TIPS,]
 	}	
