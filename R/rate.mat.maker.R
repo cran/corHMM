@@ -66,7 +66,6 @@ rate.mat.maker<-function(rate.cat, hrm=TRUE, ntraits=NULL, nstates=NULL, model=c
 				if (model == "SYM") {
 					np <- nl * (nl - 1)/2
 					sel <- col(rate.mat.index) < row(rate.mat.index)
-					rate[sel] <- 1:np
 					#Use transpose of the rate category matrix to finish enumerating:
 					rate.mat.index <- t(rate.mat.index)
 					rate.mat.index[sel] <- 1:np

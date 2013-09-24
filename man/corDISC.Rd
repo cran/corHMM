@@ -5,7 +5,7 @@
 \usage{
 corDISC(phy,data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"), 
 node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, 
-lb=0, ub=100, diagn=TRUE)
+lb=0, ub=100, diagn=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format.}
@@ -19,7 +19,7 @@ lb=0, ub=100, diagn=TRUE)
 \item{ip}{initial values used for the likelihood search. Can be a single value or a vector of unique values for each parameter. The default is \code{ip=1}.}
 \item{lb}{lower bound for the likelihood search. The default is \code{lb=0}.}
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=100}.}
-\item{diagn}{logical indicating whether diagnostic tests should be performed. The default is \code{TRUE}.}
+\item{diagn}{logical indicating whether diagnostic tests should be performed. The default is \code{FALSE}.}
 }
 \details{
 The function takes a tree and a trait file and estimates transition rates and ancestral states for two or three binary characters (see Pagel 1994). Note, however, that rayDISC can be used to evaluate the same models as in corDISC, with the major difference being that, with rayDISC, the rate matrix would have to be manipulated using \code{rate.mat.maker} in order to remove parameters associated with dual transitions. With corDISC, the input phylogeny need not be bifurcating as the algorithm is implemented to handle multifucations. Polytomies are allowed by generalizing Felsenstein's (1981) pruning algorithm to be the product of the probability of observing the tip states of n descendant nodes, rather than two, as in the completely bifurcating case. For the trait file, the first column of the trait file must contain the species labels to match to the tree, with the second column onwards corresponding to the binary traits of interest. The user can fix the root state probabilities by supplying a vector to \code{root.p}. For example, in the two trait case, if the hypothesis is that the root is 00, then the root vector would be \code{root.p=c(1,0,0,0)} for state combinations 00, 01, 10, and 11, respectively. If user supplies the flag \code{root.p}=\dQuote{maddfitz} the same procedure described by Maddison et al (2007) and FitzJohn et al (2009) is used. Note, however, that the default \code{root.p=NULL} assumes equal weighting among all possible states.
@@ -49,12 +49,15 @@ We also note that scoring information that is missing for a species can be incor
 ## Load tree and data
 # data(primates)
 
-## state combination three is not an observed state, so for fun, let's remove
+## Obtain the fit for two binary characters
+# pp<-corDISC(primates$tree,primates$trait,ntraits=2,model="ARD",
+# node.states="marginal", diagn=FALSE)
+# pp
+
+## State combination three is not an observed state, so for fun, let's remove
 ## these transitions:
 # new.mat <- rate.mat.maker(hrm=FALSE, ntraits=2, model="ARD")
 # new.mat <- rate.par.drop(new.mat, c(2,8,5,6))
-
-## Obtain the fit for two binary characters
 # pp<-corDISC(primates$tree,primates$trait,ntraits=2,rate.mat=new.mat,model="ARD",
 # node.states="marginal", diagn=FALSE)
 # pp
