@@ -97,7 +97,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 	lower = rep(lb, model.set.final$np)
 	upper = rep(ub, model.set.final$np)
 
-	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 	if(!is.null(p)){
 		cat("Calculating likelihood from a set of fixed parameters", "\n")
 		out<-NULL

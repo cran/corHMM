@@ -83,7 +83,7 @@ corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"
 	lower = rep(lb, model.set.final$np)
 	upper = rep(ub, model.set.final$np)
 	
-	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+	opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 	
 	if(!is.null(p)){
 		cat("Calculating likelihood from a set of fixed parameters", "\n")
@@ -100,7 +100,7 @@ corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"
 			#Sets parameter settings for random restarts by taking the parsimony score and dividing
 			#by the total length of the tree
 			model.set.init<-rate.mat.set.paint(phy,data.sort,nregimes,ntraits,model="ER")
-			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 			dat<-as.matrix(data.sort)
 			dat<-phyDat(dat,type="USER", levels=c("0","1"))
 			par.score<-parsimony(phy, dat, method="fitch")
@@ -120,7 +120,7 @@ corPAINT<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"
 		#If a user-specified starting value(s) is supplied:
 		else{
 			cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
-			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.25)
+			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corpaint, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,regimes=regimes,root.p=root.p)
 			loglik <- -out$objective
 			est.pars<-out$solution

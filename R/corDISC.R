@@ -47,7 +47,7 @@ corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD")
 
 	#Some pre-processing code in order to print totals to the screen:
 	count.set<-rate.mat.set(phy,data.sort,ntraits,model=model)	
-	working.data<-apply(count.set$liks,1,which.max)
+	working.data<-apply(count.set$liks[1:Ntip(phy),],1,which.max)
 	counts <- table(working.data)
 	levels <- levels(as.factor(working.data))
 	cols <- as.factor(working.data)
