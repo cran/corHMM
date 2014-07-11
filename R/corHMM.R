@@ -113,8 +113,15 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			dat<-phyDat(dat,type="USER", levels=c("0","1"))
 			par.score<-parsimony(phy, dat, method="fitch")
 			tl <- sum(phy$edge.length)
-			mean = par.score/tl
-			ip<-rexp(1, 1/mean)
+			mean.change = par.score/tl
+			if(mean.change==0){
+				ip=lb+0.01
+			}else{
+				ip<-rexp(1, 1/mean.change)
+			}
+			if(ip < lb || ip > ub){ # initial parameter value is outside bounds
+				ip <- lb
+			}			
 			lower = rep(lb, model.set.init$np)
 			upper = rep(ub, model.set.init$np)
 			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
@@ -152,8 +159,15 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						dat<-phyDat(dat,type="USER", levels=c("0","1"))
 						par.score<-parsimony(phy, dat, method="fitch")/2
 						tl <- sum(phy$edge.length)
-						mean = par.score/tl
-						starts<-rexp(model.set.final$np, 1/mean)
+						mean.change = par.score/tl
+						if(mean.change==0){
+							ip=0.01+lb
+						}else{
+							starts<-rexp(model.set.final$np, 1/mean.change)
+						}
+						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
+							starts <- lb
+						}						
 						ip = starts
 						out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)			
 						tmp = matrix(,1,ncol=(1+model.set.final$np))
@@ -161,7 +175,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						tmp[,2:(model.set.final$np+1)] = starts
 						for(i in 2:nstarts){
 						#Temporary solution for ensuring an ordered Q with respect to the rate classes. If a simpler model is called this feature is automatically turned off:
-							starts<-rexp(model.set.final$np, 1/mean)
+							starts<-rexp(model.set.final$np, 1/mean.change)
 							par.order<-NA
 							if(rate.cat == 2){
 								try(par.order<-starts[3] > starts[8])
@@ -251,11 +265,18 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 					dat<-phyDat(dat,type="USER", levels=c("0","1"))
 					par.score<-parsimony(phy, dat, method="fitch")/2
 					tl <- sum(phy$edge.length)
-					mean = par.score/tl
+					mean.change = par.score/tl
 					random.restart<-function(nstarts){
 						tmp = matrix(,1,ncol=(1+model.set.final$np))
 						#Temporary solution for ensuring an ordered Q with respect to the rate classes. If a simpler model is called this feature is automatically turned off:
-						starts<-rexp(model.set.final$np, 1/mean)
+						if(mean.change==0){
+							ip=0.01+lb
+						}else{
+							starts<-rexp(model.set.final$np, 1/mean.change)
+						}
+						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
+							starts <- lb
+						}												
 						par.order<-NA
 						if(rate.cat == 2){
 							try(par.order<-starts[3] > starts[8])

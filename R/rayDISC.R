@@ -116,8 +116,12 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 			dat<-phyDat(dat,type="USER", levels=levels(as.factor(workingData[,1])))
 			par.score<-parsimony(phy, dat, method="fitch")
 			tl <- sum(phy$edge.length)
-			mean = par.score/tl
-			ip<-rexp(1, 1/mean)
+			mean.change = par.score/tl
+			if(mean.change==0){
+				ip=0.01 + lb
+			}else{
+				ip<-rexp(1, 1/mean.change)
+			}
 			if(ip < lb || ip > ub){ # initial parameter value is outside bounds
 				ip <- lb
 			}

@@ -249,8 +249,6 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 	if(method=="joint"){
 		lik.states<-numeric(nb.tip + nb.node)
 		comp<-matrix(0,nb.tip + nb.node,ncol(liks))
-		logcomp<-matrix(0,nb.tip + nb.node,ncol(liks))
-		logcomp.tot<-0
 		for (i  in seq(from = 1, length.out = nb.node)) {
 			#The ancestral node at row i is called focal:
 			focal <- anc[i]
@@ -262,10 +260,19 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 			for (desIndex in sequence(length(desRows))){
 				#If a tip calculate C_y(i) for the tips and stores in liks matrix:
 				if(any(desNodes[desIndex]==phy$edge[,1])==FALSE){
-					liks[desNodes[desIndex],] <- expm(Q * phy$edge.length[desRows[desIndex]], method=c("Ward77")) %*% liks[desNodes[desIndex],]
-					liks[desNodes[desIndex],] <- liks[desNodes[desIndex],]
-					#Collects the likeliest state at the tips:
-					comp[desNodes[desIndex],] <- which.max(liks[desNodes[desIndex],])
+					if(hrm==TRUE){
+						v<-c(rep(1, k*rate.cat))
+					}
+					if(hrm==FALSE){
+						v<-c(rep(1, nl^k))
+					}
+					Pij <- expm(Q * phy$edge.length[desRows[desIndex]], method=c("Ward77"))
+					v = v * liks[desNodes[desIndex],]
+					for(i in 1:dim(Pij)[1]){
+						L <- Pij[i,] * v
+						liks[desNodes[desIndex],i] <- max(L)
+						comp[desNodes[desIndex],i]<-which(L==max(L))[1]
+					}					
 				}
 			}
 			#Collects t_z, or the branch subtending focal:
@@ -293,19 +300,17 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				}
 				else{
 					if(is.character(root.p)){
-						liks[focal, ] <- root.state * equil.root
+						liks[focal,] <- root.state * equil.root
 					}
 					else{
-						liks[focal, ] <- root.state * root.p
+						liks[focal,] <- root.state * root.p
 					}
 				}
-				liks[focal, ] <- liks[focal,] 
 			}
 			#All other internal nodes, except the root:
 			else{
 				#Calculates P_ij(t_z):
 				Pij <- expm(Q * tz, method=c("Ward77"))
-				
 				#Calculates L_z(i):
 				if(hrm==TRUE){
 					v<-c(rep(1, k*rate.cat))
@@ -316,33 +321,31 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), hrm=
 				for (desIndex in sequence(length(desRows))){
 					v = v * liks[desNodes[desIndex],]
 				}
-				#Finishes L_z(i):
-				L <- t(Pij) * v
-				#Collects which is the highest likelihood and which state it corresponds to:
-				liks[focal,] <- apply(L, 2, max)
-				comp[focal,] <- apply(L, 2, which.max)
-				#log compensation to deal with underflow issues based on what BiSSE does -- works only sometimes -- still testing will be available in next version:
-				if(any(liks[focal,][!liks[focal,]==0] < 1e-500)){
-					tmp <- liks[focal,]
-					tmp[!tmp==0] <- 1e-500 / tmp[!tmp==0]
-					liks[focal,] = liks[focal,] * tmp
-					tmp[!tmp==0] <- log(tmp[!tmp==0])
-					logcomp[focal,] <- tmp
-				}		
+				for(i in 1:dim(Pij)[1]){
+					L <- Pij[i,] * v
+					liks[focal,i] <- max(L)
+					comp[focal,i]<-which(L==max(L))[1]
+				}
+				sum.tot <- sum(liks[focal,])
+				liks[focal,]=liks[focal,]/sum.tot
+				
+#				if(sum(liks[focal,])<1e-200){
+					#Kicks in arbitrary precision calculations: 
+#					library(Rmpfr)
+#					liks <- mpfr(liks, 15)	
+#				}
 			}
 		}
 		root <- nb.tip + 1L
-		lik.states[root] <- which.max(liks[root,])
+		lik.states[root] <- which(liks[root,]==max(liks[root,]))
 		N <- dim(phy$edge)[1]
 		for(i in N:1){
 			anc <- phy$edge[i,1]
 			des <- phy$edge[i,2]
-			tmp <- which.max(liks[des,])
-			lik.states[des] <- comp[des,tmp]
-			logcomp.tot <- logcomp.tot + logcomp[des,lik.states[anc]]
+			lik.states[des] <- comp[des,lik.states[anc]]
 		}
 		#For later use:
-		#logl <- log(liks[root,lik.states[root]]) - logcomp.tot
+		#logl <- as.numeric(log(liks[root,lik.states[root]]))
 		#Outputs likeliest tip states
 		obj$lik.tip.states <- NULL
 		#Outputs likeliest node states

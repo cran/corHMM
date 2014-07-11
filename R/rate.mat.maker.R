@@ -142,6 +142,10 @@ rate.mat.maker<-function(rate.cat, hrm=TRUE, ntraits=NULL, nstates=NULL, model=c
 				}
 			}
 		}
+		if(ntraits==1){
+			rownames(rate.mat.index) <- as.character(1:nl)
+			colnames(rate.mat.index) <- as.character(1:nl)
+		}
 		if(ntraits==2){
 			rownames(rate.mat.index) <- c("(0,0)","(0,1)","(1,0)","(1,1)")
 			colnames(rate.mat.index) <- c("(0,0)","(0,1)","(1,0)","(1,1)")

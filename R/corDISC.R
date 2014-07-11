@@ -108,8 +108,15 @@ corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD")
 			dat<-phyDat(dat,type="USER", levels=c("0","1"))
 			par.score<-parsimony(phy, dat, method="fitch")
 			tl <- sum(phy$edge.length)
-			mean = par.score/tl
-			ip<-rexp(1, 1/mean)
+			mean.change = par.score/tl
+			if(mean.change==0){
+				ip=lb+0.01
+			}else{
+				ip<-rexp(1, 1/mean.change)
+			}
+			if(ip < lb || ip > ub){ # initial parameter value is outside bounds
+				ip <- lb
+			}
 			lower.init = rep(lb, model.set.init$np)
 			upper.init = rep(ub, model.set.init$np)
 			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.cordisc, lb=lower.init, ub=upper.init, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
@@ -124,7 +131,7 @@ corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD")
 		else{
 			cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
 			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.cordisc, lb=lower, ub=upper, opts=opts)
+			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.cordisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 			loglik <- -out$objective
 			est.pars<-out$solution
 		}
@@ -192,7 +199,6 @@ corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD")
 
 #Print function
 print.cordisc<-function(x,...){
-	
 	ntips=Ntip(x$phy)
 	output<-data.frame(x$loglik,x$AIC,x$AICc,x$ntraits,ntips, row.names="")
 	names(output)<-c("-lnL","AIC","AICc","N.traits","ntax")
@@ -218,7 +224,6 @@ print.cordisc<-function(x,...){
 }
 
 dev.cordisc<-function(p,phy,liks,Q,rate,root.p){
-	
 	nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
 	TIPS <- 1:nb.tip
