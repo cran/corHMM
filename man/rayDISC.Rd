@@ -1,5 +1,6 @@
 \name{rayDISC}
 \alias{rayDISC}
+\alias{dev.raydisc}
 \title{Evolution of categorical traits}
 \description{Fits a model of evolution for categorical traits, allowing for multi-state characters, polymorphisms, missing data, and incompletely resolved trees}
 \usage{

@@ -25,7 +25,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 		}
 	}
 	
-	# Checks to make sure phy & data have same taxa. sFixes conflicts (see match.tree.data function).
+	# Checks to make sure phy & data have same taxa. Fixes conflicts (see match.tree.data function).
 	matching <- match.tree.data(phy,data) 
 	data <- matching$data
 	phy <- matching$phy
@@ -163,16 +163,16 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						if(mean.change==0){
 							ip=0.01+lb
 						}else{
-							starts<-rexp(model.set.final$np, 1/mean.change)
+							ip <- rexp(model.set.final$np, 1/mean.change)
 						}
 						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
-							starts <- lb
+							ip <- lb
 						}						
-						ip = starts
-						out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)			
+						out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+						
 						tmp = matrix(,1,ncol=(1+model.set.final$np))
 						tmp[,1] = out$objective
-						tmp[,2:(model.set.final$np+1)] = starts
+						tmp[,2:(model.set.final$np+1)] = out$solution
 						for(i in 2:nstarts){
 						#Temporary solution for ensuring an ordered Q with respect to the rate classes. If a simpler model is called this feature is automatically turned off:
 							starts<-rexp(model.set.final$np, 1/mean.change)
@@ -272,7 +272,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						if(mean.change==0){
 							ip=0.01+lb
 						}else{
-							starts<-rexp(model.set.final$np, 1/mean.change)
+							ip<-rexp(model.set.final$np, 1/mean.change)
 						}
 						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
 							starts <- lb

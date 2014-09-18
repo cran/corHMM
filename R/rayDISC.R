@@ -33,7 +33,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 	data <- matching$data
 	phy <- matching$phy
 
-	# Wont perform reconstructions on invariant characters
+	# Wont perform reconstructions on invariant characters -- why not? Seems like you should be able to.
 	if(nlevels(as.factor(data[,charnum+1])) <= 1){
 		obj <- NULL
 		obj$loglik <- NULL
@@ -247,10 +247,15 @@ dev.raydisc<-function(p,phy,liks,Q,rate,root.p){
 	#Obtain an object of all the unique ancestors
 	anc <- unique(phy$edge[,1])
 
-	if (any(is.nan(p)) || any(is.infinite(p))) return(1000000)
+	#This bit is to allow packages like "selac" the ability to deal with this function directly:
+	if(is.null(rate)){
+		Q=Q
+	}else{
+		if (any(is.nan(p)) || any(is.infinite(p))) return(1000000)
+		Q[] <- c(p, 0)[rate]
+		diag(Q) <- -rowSums(Q)
+	}
 
-	Q[] <- c(p, 0)[rate]
-	diag(Q) <- -rowSums(Q)
 	for (i  in seq(from = 1, length.out = nb.node)) {
 		#the ancestral node at row i is called focal
 		focal <- anc[i]
