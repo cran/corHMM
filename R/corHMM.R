@@ -2,7 +2,7 @@
 
 #written by Jeremy M. Beaulieu
 
-corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "marginal", "scaled"), optim.method=c("subplex"), p=NULL, root.p=NULL, ip=NULL, nstarts=10, n.cores=NULL, lb=0, ub=100, diagn=FALSE){
+corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "marginal", "scaled"), optim.method=c("subplex"), p=NULL, root.p=NULL, ip=NULL, nstarts=10, n.cores=NULL, sann.its=5000, diagn=FALSE){
 	
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
@@ -30,7 +30,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 	data <- matching$data
 	phy <- matching$phy
 	
-	# Wont perform reconstructions on invariant characters
+	# Will not perform reconstructions on invariant characters
 	if(nlevels(as.factor(data[,1])) <= 1){
 		obj <- NULL
 		obj$loglik <- NULL
@@ -62,17 +62,8 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 	#Some initial values for use later
 	k=2
 	
-	# Check to make sure values are reasonable (i.e. non-negative)
-	if(ub < 0){
-		ub <- 100
-	}
-	if(lb < 0){
-		lb <- 0
-	}
-	if(ub < lb){ # This user really needs help
-		ub <- 100
-		lb <- 0
-	}
+	ub = log(100)
+	lb = -20
 	
 	obj <- NULL
 	nb.tip <- length(phy$tip.label)
@@ -90,15 +81,17 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 		model.set.final$rate <- rate
 		model.set.final$index.matrix <- rate.mat
 	}
+
 	lower = rep(lb, model.set.final$np)
 	upper = rep(ub, model.set.final$np)
 	
-	if(optim.method=="genoud"){
+	if(optim.method=="twoStep"){
 		if(!is.null(p)){
 			cat("Calculating likelihood from a set of fixed parameters", "\n")
 			out<-NULL
-			est.pars<-p
-			out$objective<-dev.corhmm(est.pars,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			est.pars<-log(p)
+			out$objective <- dev.corhmm(est.pars,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			est.pars <- exp(p)
 		}
 		else{
 			cat("Initializing...", "\n")
@@ -108,31 +101,40 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			model.set.init$index.matrix<-rate
 			rate[is.na(rate)]<-max(rate,na.rm=TRUE)+1
 			model.set.init$rate<-rate
-			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
 			dat<-as.matrix(data.sort)
 			dat<-phyDat(dat,type="USER", levels=c("0","1"))
 			par.score<-parsimony(phy, dat, method="fitch")
 			tl <- sum(phy$edge.length)
 			mean.change = par.score/tl
 			if(mean.change==0){
-				ip=lb+0.01
+				ip=exp(lb)+0.01
 			}else{
 				ip<-rexp(1, 1/mean.change)
 			}
-			if(ip < lb || ip > ub){ # initial parameter value is outside bounds
-				ip <- lb
+			if(ip < exp(lb) || ip > exp(ub)){ # initial parameter value is outside bounds
+				ip <- exp(lb)
 			}			
-			lower = rep(lb, model.set.init$np)
-			upper = rep(ub, model.set.init$np)
-			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
 			lower = rep(lb, model.set.final$np)
 			upper = rep(ub, model.set.final$np)
-			cat("Finished. Beginning thorough search...", "\n")
-			Domains<-cbind(lower,upper)
-			starting.values=rep(init$solution,length.out = model.set.final$np)
-			out<-genoud(fn=dev.corhmm, starting.values=starting.values, nvars=model.set.final$np, print.level=0, boundary.enforcement=2, Domains=Domains, wait.generations=20, max.generations=100, pop.size=1000, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
-			loglik <- -out$value
-			est.pars<-out$par
+			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
+			cat("Finished. Beginning simulated annealing Round 1...", "\n")
+			out.sann <- GenSA(rep(log(ip), model.set.final$np), fn=dev.corhmm, lower=lower, upper=upper, control=list(max.call=sann.its), phy=phy,liks=model.set.final$liks, Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			cat("Finished. Refining using subplex routine...", "\n")
+#			out = subplex(out.sann$par, fn=dev.corhmm, control=list(.Machine$double.eps^0.25, parscale=rep(0.1, length(out.sann$par))), phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
+			out = nloptr(x0=out.sann$par, eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			cat("Finished. Beginning simulated annealing Round 2...", "\n")
+			out.sann <- GenSA(out$solution, fn=dev.corhmm, lower=lower, upper=upper, control=list(max.call=sann.its), phy=phy,liks=model.set.final$liks, Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			cat("Finished. Refining using subplex routine...", "\n")
+#			out = subplex(out.sann$par, fn=dev.corhmm, control=list(.Machine$double.eps^0.25, parscale=rep(0.1, length(out.sann$par))), phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
+			out = nloptr(x0=out.sann$par, eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			cat("Finished. Beginning simulated annealing Round 3...", "\n")
+			out.sann <- GenSA(out$solution, fn=dev.corhmm, lower=lower, upper=upper, control=list(max.call=sann.its), phy=phy,liks=model.set.final$liks, Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			cat("Finished. Refining using subplex routine...", "\n")
+#			out = subplex(out.sann$par, fn=dev.corhmm, control=list(.Machine$double.eps^0.25, parscale=rep(0.1, length(out.sann$par))), phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
+			out = nloptr(x0=out.sann$par, eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+
+			loglik <- -out$objective
+			est.pars <- exp(out$solution)
 		}
 	}
 	if(optim.method=="subplex"){
@@ -140,10 +142,10 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 		if(!is.null(p)){
 			cat("Calculating likelihood from a set of fixed parameters", "\n")
 			out<-NULL
-			out$solution<-p
-			out$objective<-dev.corhmm(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+			est.pars<-log(p)
+			out$objective<-dev.corhmm(est.pars,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 			loglik <- -out$objective
-			est.pars<-out$solution
+			est.pars <- exp(out$solution)
 		}
 		#If a user-specified starting value(s) is not supplied this begins loop through a set of randomly chosen starting values:
 		else{
@@ -161,21 +163,25 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						tl <- sum(phy$edge.length)
 						mean.change = par.score/tl
 						if(mean.change==0){
-							ip=0.01+lb
+							ip=0.01+exp(lb)
 						}else{
 							ip <- rexp(model.set.final$np, 1/mean.change)
 						}
-						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
-							ip <- lb
-						}						
-						out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
-						
+						ip[ip < exp(lb)] = exp(lb)
+						ip[ip > exp(ub)] = exp(lb)
+						out = nloptr(x0=rep(log(ip), length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 						tmp = matrix(,1,ncol=(1+model.set.final$np))
 						tmp[,1] = out$objective
 						tmp[,2:(model.set.final$np+1)] = out$solution
 						for(i in 2:nstarts){
 						#Temporary solution for ensuring an ordered Q with respect to the rate classes. If a simpler model is called this feature is automatically turned off:
-							starts<-rexp(model.set.final$np, 1/mean.change)
+							if(mean.change==0){
+								starts=runif(0.01+exp(lb), 1, model.set.final$np)
+							}else{
+								starts<-rexp(model.set.final$np, 1/mean.change)
+							}
+							starts[starts < exp(lb)] = exp(lb)
+							starts[starts > exp(ub)] = exp(lb)							
 							par.order<-NA
 							if(rate.cat == 2){
 								try(par.order<-starts[3] > starts[8])
@@ -240,7 +246,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 									starts[38] <- pp.tmp[order(pp.tmp)][7]
 								}
 							}						
-							out.alt = nloptr(x0=rep(starts, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+							out.alt = nloptr(x0=rep(log(starts), length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 							tmp[,1] = out.alt$objective
 							tmp[,2:(model.set.final$np+1)] = starts
 							if(out.alt$objective < out$objective){
@@ -253,7 +259,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 							}
 						}
 						loglik <- -out$objective
-						est.pars<-out$solution
+						est.pars <- exp(out$solution)
 					}
 				}
 				#If the analysis is to be run on multiple processors:
@@ -270,13 +276,12 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 						tmp = matrix(,1,ncol=(1+model.set.final$np))
 						#Temporary solution for ensuring an ordered Q with respect to the rate classes. If a simpler model is called this feature is automatically turned off:
 						if(mean.change==0){
-							ip=0.01+lb
+							starts=rep(0.01+exp(lb), model.set.final$np)
 						}else{
-							ip<-rexp(model.set.final$np, 1/mean.change)
+							starts<-rexp(model.set.final$np, 1/mean.change)
 						}
-						if(ip < lb || ip > ub){ # initial parameter value is outside bounds
-							starts <- lb
-						}												
+						starts[starts < exp(lb)] = exp(lb)
+						starts[starts > exp(ub)] = exp(lb)
 						par.order<-NA
 						if(rate.cat == 2){
 							try(par.order<-starts[3] > starts[8])
@@ -313,7 +318,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 								starts[9] <- pp.tmp[order(pp.tmp)][2]
 								starts[15] <- pp.tmp[order(pp.tmp)][3]
 								starts[21] <- pp.tmp[order(pp.tmp)][4]
-								starts[26] <- pp.tmp[order(pp.tmp)][5]
+								starts[26] <- pp.tmp[order(pp.tmp)][5]	
 							}
 						}
 						if(rate.cat == 6){
@@ -340,13 +345,13 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 								starts[33] <- pp.tmp[order(pp.tmp)][6]
 								starts[38] <- pp.tmp[order(pp.tmp)][7]
 							}
-						}						
-						out = nloptr(x0=rep(starts, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+						}
+						out = nloptr(x0=log(starts), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy, liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 						tmp[,1] = out$objective
 						tmp[,2:(model.set.final$np+1)] = out$solution
 						tmp
 					}
-					restart.set<-mclapply(1:nstarts,random.restart, mc.cores=n.cores)
+					restart.set<-mclapply(1:nstarts, random.restart, mc.cores=n.cores)
 					#Finds the best fit within the restart.set list
 					best.fit<-which.min(unlist(lapply(1:nstarts,function(i) lapply(restart.set[[i]][,1],min))))
 					#Generates an object to store results from restart algorithm:
@@ -354,15 +359,15 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 					out$objective=unlist(restart.set[[best.fit]][,1])
 					out$solution=unlist(restart.set[[best.fit]][,2:(model.set.final$np+1)])
 					loglik <- -out$objective
-					est.pars<-out$solution
+					est.pars <- exp(out$solution)
 				}
 			}
 			else{
 				cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
 				ip=ip
-				out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+				out = nloptr(x0=rep(log(ip), length.out = model.set.final$np), eval_f=dev.corhmm, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 				loglik <- -out$objective
-				est.pars<-out$solution
+				est.pars <- exp(out$solution)
 			}			
 		}
 	}
@@ -376,7 +381,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 		pr<-apply(lik.anc$lik.anc.states,1,which.max)
 		phy$node.label <- pr
 		tip.states <- lik.anc$lik.tip.states
-		#row.names(tip.states) <- phy$tip.label
+		row.names(tip.states) <- phy$tip.label
 	}
 	if (node.states == "joint"){
 		lik.anc <- ancRECON(phy, data, est.pars, hrm=TRUE, rate.cat, rate.mat=rate.mat, method=node.states, ntraits=NULL,root.p=root.p)
@@ -465,7 +470,7 @@ corHMM<-function(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "mar
 			}
 		}
 	}
-	obj = list(loglik = loglik, AIC = -2*loglik+2*model.set.final$np,AICc = -2*loglik+(2*model.set.final$np*(nb.tip/(nb.tip-model.set.final$np-1))),rate.cat=rate.cat,solution=solution, solution.se=solution.se, index.mat=model.set.final$index.matrix, opts=opts, data=data.sort, phy=phy, states=lik.anc$lik.anc.states, tip.states=tip.states, iterations=out$iterations, eigval=eigval, eigvect=eigvect) 
+	obj = list(loglik = loglik, AIC = -2*loglik+2*model.set.final$np,AICc = -2*loglik+(2*model.set.final$np*(nb.tip/(nb.tip-model.set.final$np-1))),rate.cat=rate.cat,solution=solution, solution.se=solution.se, index.mat=model.set.final$index.matrix, data=data.sort, phy=phy, states=lik.anc$lik.anc.states, tip.states=tip.states, iterations=out$iterations, eigval=eigval, eigvect=eigvect) 
 	class(obj)<-"corhmm"
 	return(obj)
 }
@@ -499,7 +504,7 @@ print.corhmm<-function(x,...){
 
 #Generalized ace() function that allows analysis to be carried out when there are polytomies:
 dev.corhmm <- function(p,phy,liks,Q,rate,root.p) {
-	
+	p = exp(p)
 	nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
 	TIPS <- 1:nb.tip

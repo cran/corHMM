@@ -5,7 +5,7 @@
 \usage{
 corHMM(phy, data, rate.cat, rate.mat=NULL, node.states=c("joint", "marginal","scaled"), 
 optim.method=c("subplex"), p=NULL, root.p=NULL, ip=NULL, nstarts=10, n.cores=NULL, 
-lb=0, ub=100, diagn=FALSE)
+sann.its=5000, diagn=FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format.}
@@ -13,14 +13,13 @@ lb=0, ub=100, diagn=FALSE)
 \item{rate.cat}{specifies the number of rate categories in the HRM.} 
 \item{rate.mat}{a user-supplied rate matrix index of parameters to be optimized.}
 \item{node.states}{method used to calculate ancestral states at internal nodes (see Details).}
-\item{optim.method}{method used to perform optimization. The default is \code{subplex}.} 
+\item{optim.method}{method used to perform optimization. The default is \code{subplex}, but a user can also specify \code{twoStep} is a two step process which begins with a stochastic simulated annealing search, followed by a subplex round to finish the search.} 
 \item{p}{a vector of transition rates. Allows the user to calculate the likelihood given a specified set of parameter values to specified as fixed and calculate the likelihood.}
 \item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{maddfitz} can also be supplied to use the method of Maddison et al (2007) and FitzJohn et al (2009) (see details).}
 \item{ip}{initial values used for the likelihood search. Can be a single value or a vector of unique values for each parameter. The default is \code{ip=1}.}
 \item{nstarts}{the number of random restarts to be performed. The default is \code{nstarts=10}.}
 \item{n.cores}{the number of processor cores to spread out the random restarts.}
-\item{lb}{lower bound for the likelihood search. The default is \code{lb=0}.}
-\item{ub}{upper bound for the likelihood search. The default is \code{ub=100}.}
+\item{sann.its}{a numeric indicating the number of times the simulated annealing algorithm should call the objective function.}
 \item{diagn}{logical indicating whether diagnostic tests should be performed. The default is \code{FALSE}.}
 }
 \details{

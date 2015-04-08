@@ -1,5 +1,5 @@
 export(corHMM,corDISC,corPAINT,rate.mat.maker,rate.par.drop,rate.par.eq,ancRECON,rayDISC,plotRECON, dev.raydisc)
-import(ape, nloptr, corpcor, rgenoud)
+import(ape, nloptr, corpcor, GenSA)
 importFrom(numDeriv, hessian)
 importFrom(expm, expm)
 importFrom(phangorn, parsimony, phyDat)
