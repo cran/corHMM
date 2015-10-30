@@ -2,13 +2,13 @@
 
 #written by Jeremy M. Beaulieu
 
-corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, diagn=FALSE){
+corDISC <- function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, diagn=FALSE){
 	
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
 		obj <- NULL
 		obj$loglik <- NULL
-		obj$diagnostic <- paste("No model for ancestral states selected.  Please pass one of the following to corDISC command for parameter \'node.states\': joint, marginal, or scaled.")
+		obj$diagnostic <- paste("No model for ancestral states selected. Please pass one of the following to corDISC command for parameter \'node.states\': joint, marginal, or scaled.")
 		return(obj)
 	}
 	else { # even if node.states is not NULL, need to make sure its one of the three valid options
@@ -91,10 +91,10 @@ corDISC<-function(phy, data, ntraits=2, rate.mat=NULL, model=c("ER","SYM","ARD")
 	if(!is.null(p)){
 		cat("Calculating likelihood from a set of fixed parameters", "\n")
 		out<-NULL
-		out$solution<-p
+		out$solution <- p
 		out$objective<-dev.cordisc(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
 		loglik <- -out$objective
-		est.pars<-out$solution
+		est.pars <- out$solution
 	}
 	else{
 		if(is.null(ip)){
@@ -223,7 +223,7 @@ print.cordisc<-function(x,...){
 	}
 }
 
-dev.cordisc<-function(p,phy,liks,Q,rate,root.p){
+dev.cordisc<-function(p, phy, liks, Q, rate,root.p){
 	nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
 	TIPS <- 1:nb.tip
@@ -254,34 +254,45 @@ dev.cordisc<-function(p,phy,liks,Q,rate,root.p){
 	#If any of the logs have NAs restart search:
 	if (is.na(sum(log(comp[-TIPS])))){return(1000000)}
 	else{
-		equil.root <- NULL
-		for(i in 1:ncol(Q)){
-			posrows <- which(Q[,i] >= 0)
-			rowsum <- sum(Q[posrows,i])
-			poscols <- which(Q[i,] >= 0)
-			colsum <- sum(Q[i,poscols])
-			equil.root <- c(equil.root,rowsum/(rowsum+colsum))
-		}		
-		if (is.null(root.p)){
-			flat.root = equil.root
-			k.rates <- 1/length(which(!is.na(equil.root)))
-			flat.root[!is.na(flat.root)] = k.rates
-			flat.root[is.na(flat.root)] = 0
-			loglik<- -(sum(log(comp[-TIPS])) + log(sum(flat.root * liks[root,])))
-		}
-		else{
-			#root.p==maddfitz will fix root probabilities according to FitzJohn et al 2009 Eq. 10:
-			if(is.character(root.p)){
-				equil.root[is.na(equil.root)] = 0
-				loglik <- -(sum(log(comp[-TIPS])) + log(sum(equil.root * liks[root,])))
-				if(is.infinite(loglik)){return(1000000)}
-			}
-			#root.p!==NULL will fix root probabilities based on user supplied vector:
-			else{
-				loglik<- -(sum(log(comp[-TIPS])) + log(sum(root.p * liks[root,])))
-				if(is.infinite(loglik)){return(1000000)}
-			}
-		}
+        equil.root <- NULL
+        for(i in 1:ncol(Q)){
+            posrows <- which(Q[,i] >= 0)
+            rowsum <- sum(Q[posrows,i])
+            poscols <- which(Q[i,] >= 0)
+            colsum <- sum(Q[i,poscols])
+            equil.root <- c(equil.root,rowsum/(rowsum+colsum))
+        }
+        if (is.null(root.p)){
+            flat.root = equil.root
+            k.rates <- 1/length(which(!is.na(equil.root)))
+            flat.root[!is.na(flat.root)] = k.rates
+            flat.root[is.na(flat.root)] = 0
+            loglik<- -(sum(log(comp[-TIPS])) + log(sum(flat.root * liks[root,])))
+        }
+        else{
+            if(is.character(root.p)){
+                # root.p==yang will fix root probabilities based on the inferred rates: q10/(q01+q10)
+                if(root.p == "yang"){
+                    diag(Q) = 0
+                    equil.root = colSums(Q) / sum(Q)
+                    loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(equil.root)+log(liks[root,])))))
+                    if(is.infinite(loglik)){
+                        return(1000000)
+                    }
+                }else{
+                # root.p==maddfitz will fix root probabilities according to FitzJohn et al 2009 Eq. 10:
+                    root.p = liks[root,] / sum(liks[root,])
+                    loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                }
+            }
+            # root.p!==NULL will fix root probabilities based on user supplied vector:
+            else{
+                loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                if(is.infinite(loglik)){
+                    return(1000000)
+                }
+            }
+        }
 	}
 	loglik
 }
