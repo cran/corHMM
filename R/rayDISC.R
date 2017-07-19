@@ -1,8 +1,12 @@
+#############################
 #EVOLUTION OF DISCRETE TRAITS, ALLOWING POLYMORPHIC AND MISSING STATES
+#library(expm)
+#library(phangorn)
+#############################
 
 #written by Jeremy M. Beaulieu & Jeffrey C. Oliver
 
-rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), p=NULL, root.p=NULL, ip=NULL, lb=0,ub=100, verbose=TRUE, diagn=FALSE){
+rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled"), state.recon=c("subsequently"), lewis.asc.bias=FALSE, p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, verbose=TRUE, diagn=FALSE){
 
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
@@ -25,11 +29,24 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 		}
 	}
 
+    if(!state.recon == "subsequently" & node.states == "marginal" | node.states == "scaled"){
+        stop("Simultaneous estimation of rates and states using either marginal or scaled probabilities not yet implemented.", call.=FALSE)
+    }
+
+    if(!state.recon == "subsequently"){
+        if(!is.null(phy$node.label)){
+            if(!is.na(phy$node.label[Ntip(phy)+1])){
+                #Checking that the root prior is not set twice.
+                root.p <- NULL
+            }
+        }
+    }
+
 	#Creates the data structure and orders the rows to match the tree
 	phy$edge.length[phy$edge.length==0]=1e-5
 
 	# Checks to make sure phy & data have same taxa.  Fixes conflicts (see match.tree.data function).
-	matching <- match.tree.data(phy,data) 
+	matching <- match.tree.data(phy,data)
 	data <- matching$data
 	phy <- matching$phy
 
@@ -51,7 +68,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 	}
 
 	workingData <- data.frame(data[,charnum+1],data[,charnum+1],row.names=data[,1]) # added character twice, because at least two columns are necessary
-	workingData <- workingData[phy$tip.label,] # this might have already been done by match.tree.data	
+	workingData <- workingData[phy$tip.label,] # this might have already been done by match.tree.data
 
 	counts <- table(workingData[,1])
 	levels <- levels(as.factor(workingData[,1]))
@@ -83,9 +100,9 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 	obj <- NULL
 	nb.tip<-length(phy$tip.label)
 	nb.node <- phy$Nnode
-	
+
 	model=model
-	root.p=root.p	
+	root.p=root.p
 	ip=ip
 	model.set.final<-rate.cat.set.rayDISC(phy=phy,data=workingData,model=model,charnum=charnum)
     if(!is.null(rate.mat)){
@@ -105,8 +122,23 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
         }
 		out<-NULL
 		out$solution<-p
-		out$objective<-dev.raydisc(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
-		loglik <- -out$objective
+        if(state.recon=="subsequently") {
+            out$objective <- dev.raydisc(out$solution,phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p, lewis.asc.bias=lewis.asc.bias)
+            loglik <- -out$objective
+        } else {
+            if(lewis.asc.bias == TRUE){
+                loglik.num <- ancRECON(phy=phy, data=data, p=p,  hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p, get.likelihood=TRUE)
+                phy.dummy <- phy
+                data.dummy <- cbind(phy$tip.label, 0)
+                phy.dummy$node.label <- rep(1, length(phy.dummy$node.label))
+                loglik.dummy <- ancRECON(phy=phy, data=data, p=p, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p, get.likelihood=TRUE)
+                loglik <- (loglik.num  - log(1 - exp(loglik.dummy)))
+                loglik <- out$objective
+            }else{
+                out$objective <- ancRECON(phy=phy, data=data, p=p, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p, get.likelihood=TRUE)
+                loglik <- out$objective
+            }
+        }
 		est.pars<-out$solution
 	} else {
 		if(is.null(ip)){
@@ -117,9 +149,9 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 			#by the total length of the tree
 			model.set.init<-rate.cat.set.rayDISC(phy=phy,data=workingData,model="ER",charnum=charnum)
 			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-			dat<-as.matrix(workingData)
-			dat<-phyDat(dat,type="USER", levels=levels(as.factor(workingData[,1])))
-			par.score<-parsimony(phy, dat, method="fitch")
+			dat <- as.matrix(workingData)
+			dat <- phyDat(dat,type="USER", levels=levels(as.factor(workingData[,1])))
+			par.score <- parsimony(phy, dat, method="fitch")
 			tl <- sum(phy$edge.length)
 			mean.change = par.score/tl
 			if(mean.change==0){
@@ -132,13 +164,17 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 			}
 			lower.init = rep(lb, model.set.init$np)
 			upper.init = rep(ub, model.set.init$np)
-			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.raydisc, lb=lower.init, ub=upper.init, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p)
+			init = nloptr(x0=rep(ip, length.out = model.set.init$np), eval_f=dev.raydisc, lb=lower.init, ub=upper.init, opts=opts, phy=phy,liks=model.set.init$liks,Q=model.set.init$Q,rate=model.set.init$rate,root.p=root.p, lewis.asc.bias=lewis.asc.bias)
             if(verbose == TRUE){
                 cat("Finished. Beginning thorough search...", "\n")
             }
 			lower = rep(lb, model.set.final$np)
 			upper = rep(ub, model.set.final$np)
-			out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+            if(state.recon=="subsequently") {
+                out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q, rate=model.set.final$rate, root.p=root.p, lewis.asc.bias=lewis.asc.bias)
+            } else {
+                out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc.rates.and.states, lb=lower, ub=upper, opts=opts, phy=phy, data=data, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p, lewis.asc.bias=lewis.asc.bias, get.likelihood=TRUE)
+            }
 			loglik <- -out$objective
 			est.pars<-out$solution
 		}
@@ -148,9 +184,13 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
                 cat("Beginning subplex optimization routine -- Starting value(s):", ip, "\n")
             }
 			opts <- list("algorithm"="NLOPT_LN_SBPLX", "maxeval"="1000000", "ftol_rel"=.Machine$double.eps^0.5)
-			out = nloptr(x0=rep(ip, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p)
+            if(state.recon=="subsequently") {
+                out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc, lb=lower, ub=upper, opts=opts, phy=phy,liks=model.set.final$liks,Q=model.set.final$Q,rate=model.set.final$rate,root.p=root.p,lewis.asc.bias=lewis.asc.bias)
+            } else {
+                out <- nloptr(x0=rep(init$solution, length.out = model.set.final$np), eval_f=dev.raydisc.rates.and.states, lb=lower, ub=upper, opts=opts, phy=phy, data=data, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p, lewis.asc.bias=lewis.asc.bias, get.likelihood=TRUE)
+            }
 			loglik <- -out$objective
-			est.pars<-out$solution
+			est.pars <- out$solution
 		}
 	}
 	#Starts the summarization process:
@@ -158,18 +198,26 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
         cat("Finished. Inferring ancestral states using", node.states, "reconstruction.","\n")
     }
 	TIPS <- 1:nb.tip
-	lik.anc <- ancRECON(phy, data, est.pars, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p)
 	if(node.states == "marginal" || node.states == "scaled"){
-		pr<-apply(lik.anc$lik.anc.states,1,which.max)
+        lik.anc <- ancRECON(phy, data, est.pars, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p)
+		pr <- apply(lik.anc$lik.anc.states,1,which.max)
 		phy$node.label <- pr
 		tip.states <- lik.anc$lik.tip.states
 		#row.names(tip.states) <- phy$tip.label
 	}
-	if(node.states == "joint"){
-		phy$node.label <- lik.anc$lik.anc.states
-		tip.states <- lik.anc$lik.tip.states
-	}
-
+    if(!state.recon == "given"){
+        if(node.states == "joint"){
+            lik.anc <- ancRECON(phy, data, est.pars, hrm=FALSE, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, charnum=charnum, root.p=root.p)
+            phy$node.label <- lik.anc$lik.anc.states
+            tip.states <- lik.anc$lik.tip.states
+        }
+    }else{
+        lik.anc <- NULL
+        lik.anc$lik.anc.states <- phy$node.label
+        lik.anc$lik.tip.states <- workingData[,1]
+        tip.states <- lik.anc$lik.tip.states
+    }
+    
     if(diagn==TRUE){
         if(verbose == TRUE){
             cat("Finished. Performing diagnostic tests.", "\n")
@@ -186,7 +234,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 		solution <- matrix(est.pars[model.set.final$index.matrix], dim(model.set.final$index.matrix))
 		solution.se <- matrix(0,dim(solution)[1],dim(solution)[1])
 		eigval<-NULL
-		eigvect<-NULL	
+		eigvect<-NULL
 	}
 
 	if((any(solution == lb,na.rm = TRUE) || any(solution == ub,na.rm = TRUE)) && (lb != 0 || ub != 100)){
@@ -194,13 +242,12 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 	}
 	rownames(solution) <- rownames(solution.se) <- state.names
 	colnames(solution) <- colnames(solution.se) <- state.names
-
 	if(is.character(node.states)){
 		if (node.states == "marginal" || node.states == "scaled"){
             colnames(lik.anc$lik.anc.states) <- state.names
 		}
 	}
-	obj = list(loglik = loglik, AIC = -2*loglik+2*model.set.final$np,AICc = -2*loglik+(2*model.set.final$np*(nb.tip/(nb.tip-model.set.final$np-1))),ntraits=1, solution=solution, solution.se=solution.se, index.mat=model.set.final$index.matrix, opts=opts, data=data, phy=phy, states=lik.anc$lik.anc.states, tip.states=tip.states, iterations=out$iterations, eigval=eigval, eigvect=eigvect,bound.hit=bound.hit) 
+	obj = list(loglik = loglik, AIC = -2*loglik+2*model.set.final$np,AICc = -2*loglik+(2*model.set.final$np*(nb.tip/(nb.tip-model.set.final$np-1))),ntraits=1, solution=solution, solution.se=solution.se, index.mat=model.set.final$index.matrix, lewis.asc.bias=lewis.asc.bias, opts=opts, data=data, phy=phy, states=lik.anc$lik.anc.states, tip.states=tip.states, iterations=out$iterations, eigval=eigval, eigvect=eigvect,bound.hit=bound.hit)
 	if(!is.null(matching$message.data)){ # Some taxa were included in data matrix but not not used because they were not in the tree
 		obj$message.data <- matching$message.data
 		obj$data <- matching$data # Data used for analyses were different than submitted data; return this matrix
@@ -216,19 +263,19 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
 
 #Print function
 print.raydisc<-function(x,...){
-	
+
 	ntips=Ntip(x$phy)
 	output<-data.frame(x$loglik,x$AIC,x$AICc,ntips, row.names="")
 	names(output)<-c("-lnL","AIC","AICc","ntax")
 	cat("\nFit\n")
 	print(output)
 	cat("\n")
-	
+
 	param.est<- x$solution
 	cat("Rates\n")
 	print(param.est)
 	cat("\n")
-	
+
 	if(any(x$eigval<0)){
 		index.matrix <- x$index.mat
 		#If any eigenvalue is less than 0 then the solution is not the maximum likelihood solution
@@ -247,16 +294,32 @@ print.raydisc<-function(x,...){
 	}
 }
 
-dev.raydisc<-function(p,phy,liks,Q,rate,root.p){
 
-	nb.tip <- length(phy$tip.label)
+dev.raydisc.rates.and.states <- function(p, phy, data, hrm, rate.cat, rate.mat, ntraits, method, model, charnum, root.p, lewis.asc.bias, get.likelihood) {
+    if(lewis.asc.bias == TRUE){
+        loglik.num <- ancRECON(phy=phy, data=data, p=p, hrm=hrm, rate.cat=rate.cat, rate.mat=rate.mat, ntraits=ntraits, method=method, model=model, charnum=charnum, root.p=root.p, get.likelihood=get.likelihood)
+        phy.dummy <- phy
+        data.dummy <- cbind(phy$tip.label, 0)
+        phy.dummy$node.label <- rep(1, Nnode(phy.dummy))
+        loglik.dummy <- ancRECON(phy=phy, data=data, p=p, hrm=hrm, rate.cat=rate.cat, rate.mat=rate.mat, ntraits=ntraits, method=method, model=model, charnum=charnum, root.p=root.p, get.likelihood=get.likelihood)
+        loglik <- (loglik.num  - log(1 - exp(loglik.dummy)))
+    }else{
+        loglik <- ancRECON(phy=phy, data=data, p=p, hrm=hrm, rate.cat=rate.cat, rate.mat=rate.mat, ntraits=ntraits, method=method, model=model, charnum=charnum, root.p=root.p, get.likelihood=get.likelihood)
+    }
+    return(-loglik)
+}
+
+
+dev.raydisc <- function(p, phy, liks, Q, rate, root.p, lewis.asc.bias){
+
+    nb.tip <- length(phy$tip.label)
 	nb.node <- phy$Nnode
 	TIPS <- 1:nb.tip
 	comp <- numeric(nb.tip + nb.node)
+
 	phy <- reorder(phy, "pruningwise")
 	#Obtain an object of all the unique ancestors
 	anc <- unique(phy$edge[,1])
-
 	#This bit is to allow packages like "selac" the ability to deal with this function directly:
 	if(is.null(rate)){
 		Q=Q
@@ -265,21 +328,45 @@ dev.raydisc<-function(p,phy,liks,Q,rate,root.p){
 		Q[] <- c(p, 0)[rate]
 		diag(Q) <- -rowSums(Q)
 	}
-
-	for (i  in seq(from = 1, length.out = nb.node)) {
-		#the ancestral node at row i is called focal
-		focal <- anc[i]
-		#Get descendant information of focal
-		desRows<-which(phy$edge[,1]==focal)
-		desNodes<-phy$edge[desRows,2]
-		v <- 1
-
-		for (desIndex in sequence(length(desRows))){
-			v<-v*expm(Q * phy$edge.length[desRows[desIndex]], method=c("Ward77")) %*% liks[desNodes[desIndex],]
-		}
-		comp[focal] <- sum(v)
-		liks[focal, ] <- v/comp[focal]
-	}
+    
+    if(lewis.asc.bias == TRUE) {
+        liks.dummy <- liks
+        liks.dummy[TIPS,1] = 1
+        liks.dummy[TIPS,2:dim(Q)[1]] = 0
+        comp.dummy <- comp
+        for (i  in seq(from = 1, length.out = nb.node)) {
+            #the ancestral node at row i is called focal
+            focal <- anc[i]
+            #Get descendant information of focal
+            desRows<-which(phy$edge[,1]==focal)
+            desNodes<-phy$edge[desRows,2]
+            v <- 1
+            v.dummy <- 1
+            for (desIndex in sequence(length(desRows))){
+                v <- v*expm(Q * phy$edge.length[desRows[desIndex]], method=c("Ward77")) %*% liks[desNodes[desIndex],]
+                v.dummy <- v.dummy * expm(Q * phy$edge.length[desRows[desIndex]]) %*% liks.dummy[desNodes[desIndex],]
+            }
+            comp[focal] <- sum(v)
+            comp.dummy[focal] <- sum(v.dummy)
+            liks[focal, ] <- v/comp[focal]
+            liks.dummy[focal, ] <- v.dummy/comp.dummy[focal]
+        }
+    }else{
+        for (i  in seq(from = 1, length.out = nb.node)) {
+            #the ancestral node at row i is called focal
+            focal <- anc[i]
+            #Get descendant information of focal
+            desRows<-which(phy$edge[,1]==focal)
+            desNodes<-phy$edge[desRows,2]
+            v <- 1
+            for (desIndex in sequence(length(desRows))){
+                v <- v * expm(Q * phy$edge.length[desRows[desIndex]], method=c("Ward77")) %*% liks[desNodes[desIndex],]
+            }
+            comp[focal] <- sum(v)
+            liks[focal, ] <- v/comp[focal]
+        }
+    }
+    
 	#Specifies the root:
 	root <- nb.tip + 1L
 	#If any of the logs have NAs restart search:
@@ -298,7 +385,13 @@ dev.raydisc<-function(p,phy,liks,Q,rate,root.p){
             k.rates <- 1/length(which(!is.na(equil.root)))
             flat.root[!is.na(flat.root)] = k.rates
             flat.root[is.na(flat.root)] = 0
-            loglik<- -(sum(log(comp[-TIPS])) + log(sum(flat.root * liks[root,])))
+            if(lewis.asc.bias == TRUE){
+                loglik.num <- (sum(log(comp[-TIPS])) + log(sum(exp(log(flat.root)+log(liks[root,])))))
+                loglik.denom <- (sum(log(comp.dummy[-TIPS])) + log(sum(exp(log(flat.root)+log(liks.dummy[root,])))))
+                loglik <- -(loglik.num  - log(1 - exp(loglik.denom)))
+            }else{
+                loglik<- -(sum(log(comp[-TIPS])) + log(sum(flat.root * liks[root,])))
+            }
         }
         else{
             if(is.character(root.p)){
@@ -306,19 +399,37 @@ dev.raydisc<-function(p,phy,liks,Q,rate,root.p){
                 if(root.p == "yang"){
                     diag(Q) = 0
                     equil.root = colSums(Q) / sum(Q)
-                    loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(equil.root)+log(liks[root,])))))
+                    if(lewis.asc.bias == TRUE){
+                        loglik.num <- (sum(log(comp[-TIPS])) + log(sum(exp(log(equil.root)+log(liks[root,])))))
+                        loglik.denom <- (sum(log(comp.dummy[-TIPS])) + log(sum(exp(log(equil.root)+log(liks.dummy[root,])))))
+                        loglik <- -(loglik.num  - log(1 - exp(loglik.denom)))
+                    }else{
+                        loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(equil.root)+log(liks[root,])))))
+                    }
                     if(is.infinite(loglik)){
                         return(1000000)
                     }
                 }else{
                     # root.p==maddfitz will fix root probabilities according to FitzJohn et al 2009 Eq. 10:
                     root.p = liks[root,] / sum(liks[root,])
-                    loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                    if(lewis.asc.bias == TRUE){
+                        loglik.num <- (sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                        loglik.denom <- (sum(log(comp.dummy[-TIPS])) + log(sum(exp(log(root.p)+log(liks.dummy[root,])))))
+                        loglik <- -(loglik.num  - log(1 - exp(loglik.denom)))
+                    }else{
+                        loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                    }
                 }
             }
             # root.p!==NULL will fix root probabilities based on user supplied vector:
             else{
-                loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                if(lewis.asc.bias == TRUE){
+                    loglik.num <- (sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                    loglik.denom <- (sum(log(comp.dummy[-TIPS])) + log(sum(exp(log(root.p)+log(liks.dummy[root,])))))
+                    loglik <- -(loglik.num  - log(1 - exp(loglik.denom)))
+                }else{
+                    loglik <- -(sum(log(comp[-TIPS])) + log(sum(exp(log(root.p)+log(liks[root,])))))
+                }
                 if(is.infinite(loglik)){
                     return(1000000)
                 }
@@ -434,7 +545,7 @@ match.tree.data <- function(phy, data){
 ##############
 #  findAmps  #
 ##############
-# A function to find positions of ampersands for separating different states.  
+# A function to find positions of ampersands for separating different states.
 # Will allow character state to be greater than one character long.
 findAmps <- function(string, charnum){
 	if(!is.character(string)) return(NULL)
@@ -525,5 +636,3 @@ factorData <- function(data,whichchar=1,charnum){
 	factored <- factored[,order(colnames(factored))]
 	return(factored)
 }
-
-
