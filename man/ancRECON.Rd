@@ -3,47 +3,52 @@
 \title{Ancestral state reconstruction}
 \description{Infers ancestral states based on a set of model parameters}
 \usage{
-ancRECON(phy,data, p, method=c("joint", "marginal", "scaled"), hrm=FALSE, 
-rate.cat, ntraits=NULL, charnum=NULL, rate.mat=NULL,
-model=c("ER", "SYM", "ARD"), root.p=NULL, get.likelihood=FALSE)
+ancRECON(phy,data, p, method=c("joint", "marginal", "scaled"),
+rate.cat, ntraits=NULL, rate.mat=NULL,
+model="ARD", root.p=NULL, get.likelihood=FALSE, get.tip.states = FALSE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format.}
 \item{data}{a data matrix containing species information (see Details).}
 \item{p}{a vector of transition rates to be used to estimate ancestral states.}
-\item{method}{method used to calculate ancestral states at internal nodes (see Details).}
-\item{hrm}{a logical indicating whether the underlying model is the hidden rates model (HRM). The default is \code{FALSE}.} 
+\item{method}{method used to calculate ancestral states at internal nodes. Can be one of: "joint", "marginal", or "scaled" (see Details).}
 \item{rate.cat}{specifies the number of rate categories in the HRM.} 
-\item{ntraits}{specifies the number of traits in the data file if the underlying model is not the HRM.}
-\item{charnum}{specifies the number of characters in the data file used in rayDISC.}
+\item{ntraits}{currently, this is automaticall detected and can always be set to NULL.}
 \item{rate.mat}{a user-supplied rate matrix index of parameters to be optimized.}
-\item{model}{if the model is not HRM, specifies the underlying model.}
+\item{model}{specifies the underlying model if a rate.mat is not provided ("ER", SYM", or "ARD").}
 \item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{yang} and \dQuote{maddfitz} can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009) respectively (see details).}
 \item{get.likelihood}{a logical indicating whether to obtain the likelihood of the rates and states. The default is \code{FALSE}.}
+\item{get.tip.states}{a logical indicating whether just tip reconstructions should be output. The default is \code{FALSE}.}
 }
 \details{
 This is a stand alone function for computing the marginal, joint, or scaled likelihoods of internal nodes for a given set of transition rates. Like all other functions contained in corHMM, the tree does not have to be bifurcating in order for analyses to be carried out. IMPORTANT: If the corDISC, corHMM, and rayDISC functions are used they automatically provide a tree with the likeliest states as internal node labels. This function is intended for circumstances where the user would like to reconstruct states based on rates estimated elsewhere (e.g. BayesTraits, Mesquite, \code{ape}).
 
-The algorithm based on Pupko et al. (2000, 2002) is used to calculate the \code{joint} estimates of ancestral states. The \code{marginal} method was originally implemented based on a description of an algorithm by Yang (2006). The basic idea is that the tree is rerooted on each internal node, with the marginal likelihood being the probabilities of observing the tips states given that the focal node is the root. However, this takes a ton of time as the number of nodes increase. But more importantly, this does not work easily when the model contains asymmetric rates. Here, we use the same dynamic programming algorithm as Mesquite (Maddison and Maddison, 2011), which is time linear with the number of species and calculates the marginal probability at a node using an additional up and down pass of the tree.  If \code{scaled}, the function uses the same algorithm from ace(). Note that the \code{scaled} method of ace() is simply the conditional likelihoods of observing everything at or above the focal node and these should NOT be used for ancestral state estimation.
+The algorithm based on Pupko et al. (2000, 2002) is used to calculate the \code{joint} estimates of ancestral states. The \code{marginal} method was originally implemented based on a description of an algorithm by Yang (2006). The basic idea is that the tree is rerooted on each internal node, with the marginal likelihood being the probabilities of observing the tips states given that the focal node is the root. However, this takes a ton of time as the number of nodes increase. But, importantly, this does not work easily when the model contains asymmetric rates. Here, we use the same dynamic programming algorithm as Mesquite (Maddison and Maddison, 2011), which is time linear with the number of species and calculates the marginal probability at a node using an additional up and down pass of the tree.  If \code{scaled}, the function uses the same algorithm from ace(). Note that the \code{scaled} method of ace() is simply the conditional likelihoods of observing everything at or above the focal node and these should NOT be used for ancestral state estimation.
 
-The user can fix the root state probabilities by supplying a vector to \code{root.p}. For example, in the two trait case, if the hypothesis is that the root is 00, then the root vector would be \code{root.p=c(1,0,0,0)} for state combinations 00, 01, 10, and 11, respectively. If the user supplies the flag \code{root.p}=\dQuote{yang}, then the estimated transition rates are used to set the weights at the root (see pg. 124 Yang 2006), whereas specifying \code{root.p}=\dQuote{maddfitz} employs the same procedure described by Maddison et al. (2007) and FitzJohn et al. (2009). Note that the default \code{root.p=NULL} assumes equal weighting among all possible states. 
+The user can fix the root state probabilities by supplying a vector to \code{root.p}. For example, in the two trait case, if the hypothesis is that the root is 00, then the root vector would be \code{root.p=c(1,0,0,0)} for state combinations 00, 01, 10, and 11, respectively. If analyzing a binary or multistate character, the order of root.p is the same order as the traits -- e.g., for states 1, 2, 3, a \code{root.p=c(0,1,0)} would fix the root to be in state 2. If the user supplies the flag \code{root.p}=\dQuote{yang}, then the estimated transition rates are used to set the weights at the root (see pg. 124 Yang 2006), whereas specifying \code{root.p}=\dQuote{maddfitz} employs the same procedure described by Maddison et al. (2007) and FitzJohn et al. (2009). Note that the default \code{root.p=NULL} assumes equal weighting among all possible states. 
 
 Setting get.likelihood=TRUE will provide the user the joint likelihood of the rates and states.
 }
 \value{
-For the \code{joint}, a vector of likeliest states at internal nodes and tips. For either \code{marginal} or \code{scaled}, a matrix of the probabilities of each state for each internal node are returned. 
+\item{$lik.tip.states}{A matrix of the reconstructed tip values. If the number of rate.cats is greater than 2 then the probability that each observed state is in a particular hidden state is given.}
+\item{$lik.anc.states}{For \code{joint}, a vector of likeliest states at internal nodes and tips. For either \code{marginal} or \code{scaled}, a matrix of the probabilities of each state for each internal node are returned.}
+\item{info.anc.states}{A vector containing the amount of information (in bits) that the tip states and model gives to each node.}
 }
 \examples{
-# Not run
-## Load tree and trait
-# data(primates)
-## Obtain the marginal reconstruction for a set of parameters:
-# param<-c(0.05,10,0.01,0.01,0.06,0,0.02,51.2)
-# states<-ancRECON(primates$tree,primates$trait,p=param,method="marginal",
-# hrm=FALSE,ntraits=2,model="ARD")
-## Put likeliest states on the tree:
-# pr<-apply(states$lik.anc.states,1,which.max)
-# primates$tree$node.label <- pr
+\donttest{
+data(primates)
+phy <- multi2di(primates[[1]])
+data <- primates[[2]]
+MK_3state <- corHMM(phy = phy, data = data, rate.cat = 1)
+
+# # one way to get the parameters from your corHMM object in the correct order
+params <- sapply(na.omit(c(MK_3state$index.mat)), 
+	function(x) na.omit(c(MK_3state$solution))[x])
+
+states <- ancRECON(phy = phy, data = MK_3state$data, p = params, method = "marginal", 
+	rate.cat <- MK_3state$rate.cat, ntraits = NULL, rate.mat = MK_3state$index.mat, 
+	root.p = MK_3state$root.p)
+}
 }
 \references{
 FitzJohn, R.G., W.P. Maddison, and S.P. Otto. 2009. Estimating trait-dependent speciation and extinction rates from incompletely resolved phylogenies. Systematic Biology 58:595-611.

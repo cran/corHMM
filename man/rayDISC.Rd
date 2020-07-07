@@ -5,7 +5,7 @@
 \description{Fits a model of evolution for categorical traits, allowing for multi-state characters, polymorphisms, missing data, and incompletely resolved trees}
 \usage{
 rayDISC(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"),
-node.states=c("joint", "marginal", "scaled"), state.recon=c("subsequently"), 
+node.states=c("joint", "marginal", "scaled", "none"), state.recon=c("subsequently"), 
 lewis.asc.bias=FALSE, p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, verbose=TRUE, 
 diagn=FALSE)
 }
@@ -20,7 +20,7 @@ diagn=FALSE)
 \item{state.recon}{whether to reconstruct states jointly with the rates or subsequent to the rates being optimized.}
 \item{lewis.asc.bias}{a logical indicating whether the ascertainment bias correction of Lewis et al. 2001 should be used. The default is \code{FALSE}.}
 \item{p}{a vector of transition rates. Allows the user to calculate the likelihood given a specified set of parameter values to specified as fixed and calculate the likelihood.}
-\item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{yang} and \dQuote{maddfitz} can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009) respectively (see details).}
+\item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{yang} and \dQuote{maddfitz} can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009), respectively (see details).}
 \item{ip}{initial values used for the likelihood search. Can be a single value or a vector of unique values for each parameter. The default is \code{ip=1}.}
 \item{lb}{lower bound for the likelihood search. The default is \code{lb=0}.}
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=100}.}
@@ -28,13 +28,13 @@ diagn=FALSE)
 \item{diagn}{logical indicating whether diagnostic tests should be performed. The default is \code{FALSE}.}
 }
 \details{
-The function takes a tree and a trait file and estimates transition rates and ancestral states for binary or multistate characters. The first column of the trait file must contain the species labels to match to the tree, with the second, third, fourth, and so on, corresponding to the traits of interest. Use the \code{charnum} variable to select the trait for analysis. Also, the input phylogeny need not be bifurcating as the algorithm is implemented to handle multifucations. Polytomies are allowed by generalizing Felsenstein's (1981) pruning algorithm to be the product of the probability of observing the tip states of n descendant nodes, rather than two, as in the completely bifurcating case.
+__THIS FUNCTION IS NO LONGER NECESSARY AS IT IS NOW ENTIRELY SUBSUMED WITHIN__ \code{corHMM} (see _Generalized corHMM_ vignette). But we still provide it for those that are more comfortable using it than exploring the new \code{corHMM} function. As before, \code{rayDISC} takes a tree and a trait file and estimates transition rates and ancestral states for binary or multistate characters. The first column of the trait file must contain the species labels to match to the tree, with the second, third, fourth, and so on, corresponding to the traits of interest. Use the \code{charnum} variable to select the trait for analysis. Also, the input phylogeny need not be bifurcating as the algorithm is implemented to handle multifucations. Polytomies are allowed by generalizing Felsenstein's (1981) pruning algorithm to be the product of the probability of observing the tip states of n descendant nodes, rather than two, as in the completely bifurcating case.
 
 The user can fix the root state probabilities by supplying a vector to the \code{root.p}. If the user supplies the flag \code{root.p}=\dQuote{yang}, then the estimated transition rates are used to set the weights at the root (see pg. 124 Yang 2006), whereas specifying \code{root.p}=\dQuote{maddfitz} employs the same procedure described by Maddison et al. (2007) and FitzJohn et al. (2009). Note that the default \code{root.p=NULL} assumes equal weighting among all possible states.
 
 Ambiguities (polymorphic taxa or taxa missing data) are assigned likelihoods following Felsenstein (2004, p. 255). Polymorphic taxa are coded \dQuote{&} with all states observed at a tip. For example, if a trait has four states and taxonA is observed to be in state 1 and 3, the character would be coded as \dQuote{1&3}. rayDISC then uses this information to assign a likelihood of 1.0 to both states. Missing data are treated as ambiguous for all states, thus all states for taxa missing data are assigned a likelihood of 1.0. For example, for a four-state character (i.e. DNA), a taxon missing data will have likelihoods of all four states equal to 1.0 [e.g. L(A)=1.0, L(C)=1.0, L(G)=1.0, L(T)=1.0].
 
-In all ancestral state reconstruction implementations, the rates are first estimated, and subsequently, the MLE estimates of the rates are used to determine either the state probabilities (i.e., marginal or "scaled") or maximum likelihood states at nodes. This is the default here state.recon="subsequently" argument. However, for this function only, we allow for both rates and states to be estimated jointly. This can be done either by state.recon="estimate". We also allow for a reconstruction to held constant, with the rates being estimated, which is state.recon="given". For more information please see Vignette "Getting Likelihoods From Reconstructions".
+In all ancestral state reconstruction implementations, the rates are first estimated, and subsequently, the MLE estimates of the rates are used to determine either the state probabilities (i.e., marginal or "scaled") or maximum likelihood states at nodes. This is the default -- i.e., the state.recon="subsequently" argument. However, for this function only, we also allow for both rates and states to be estimated jointly. This can be done with state.recon="estimate". We also allow for a hypothesis about states at all or even some nodes to help fixed, with the rates (and in some cases some of the states) being estimated. This is state.recon="given". For more information please see Vignette "Getting Likelihoods From Reconstructions".
 }
 \value{
 \code{rayDISC} returns an object of class \code{rayDISC}. This is a list with elements:
@@ -60,31 +60,30 @@ In all ancestral state reconstruction implementations, the rates are first estim
 }
 \seealso{\code{\link{plotRECON}}}
 \examples{
-# Not run
+\donttest{
 ### Example 1
-# Load data
-# data(rayDISC.example)
-
+data(rayDISC.example)
 ## Perform ancestral state estimation, using an asymmetric model of evolution and marginal
 ## reconstruction of ancestral states
-# recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,model="ARD",
-# node.states="marginal")
+recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,model="ARD",
+node.states="marginal")
 
 ## Plot reconstructions on tree
-# plotRECON(rayDISC.example$tree,recon$states)
+plotRECON(rayDISC.example$tree,recon$states)
 
 ### Example 2
 ## Perform ancestral state estimation on second character, using a single-rate model of
 ## evolution, marginal reconstruction of ancestral states, and setting the lower bound for
-##parameter estimates to 0.01
-# recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,charnum=2,model="ER",
-# node.states="marginal",lb=0.01)
+## parameter estimates to 0.01
+recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,charnum=2,model="ER",
+node.states="marginal",lb=0.01)
 
 ### Example 3
 ## Perform ancestral state estimation on third character, using a single-rate model of
 ## evolution and joint reconstruction of ancestral states
-# recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,charnum=3,
-# model="ER",node.states="joint")
+recon <- rayDISC(rayDISC.example$tree,rayDISC.example$trait,charnum=3,
+model="ER",node.states="joint")
+}
 }
 \references{
 Felsenstein, J. 1981. A likelihood approach to character weighting and what it tells us about parsimony and compatibility. Biological Journal of the Linnean Society 16: 183-196.
