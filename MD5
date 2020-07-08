@@ -1,4 +1,4 @@
-acd5bffa9a8484c1906398fdb3005c2b *DESCRIPTION
+a60b5a21d436dc82aab2413e95446e54 *DESCRIPTION
 bb8e15e887027e2f840c29065284da4c *NAMESPACE
 334a2e7e60c0a5dbf0860d0d81c16587 *R/ancRECON.R
 ccada179a566120a0448142b00e9b179 *R/convertPhangorn.R
@@ -16,7 +16,7 @@ b6961c6dd5095d1e485646c07ae8d48f *data/primates.paint.rda
 4a9b42f6e7d78c9949386dcdff63d79f *data/rayDISC.example.rda
 5f264d8379c746ee0a3eeb2b3a11ff30 *inst/doc/corHMMv2.1-vignette.R
 8e0af61a2c479b6e6b2d921c6d343736 *inst/doc/corHMMv2.1-vignette.Rmd
-c99e9b2963bfbda67f564e3a181aa919 *inst/doc/corHMMv2.1-vignette.pdf
+731b910531add25b09914317f4e349d5 *inst/doc/corHMMv2.1-vignette.pdf
 1b0c4bc750620e2eefaf7e258c014133 *man/ConvertPhangornReconstructions.Rd
 87184303d3be608ea1fcef935f14d21a *man/ancRECON.Rd
 705bdca4f9b48ba8ee6e1cf2097217da *man/corDISC.Rd
