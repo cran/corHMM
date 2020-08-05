@@ -44,7 +44,7 @@ tip.states = MK_3state$tip.states
 # run get simmap (can be plotted using phytools)
 simmap <- makeSimmap(tree= phy, tip.states = tip.states, states = states, model = model, nSim = 1, nCores = 1)
 # we import phytools plotSimmap for plotting
-phytools::plotSimmap(simmap[[1]])
+phytools::plotSimmap(simmap[[1]], fsize=.5)
 
 ## ------------------------------------------------------------------------
 HMM_3state <- corHMM(phy = phy, data = data, rate.cat = 2, model = "SYM", get.tip.states = TRUE)
@@ -67,7 +67,7 @@ tip.states = HMM_3state$tip.states
 simmap <- makeSimmap(tree= phy, tip.states = tip.states, states = states, model = model, nSim = 1, nCores = 1)
 
 # we import phytools plotSimmap for plotting
-phytools::plotSimmap(simmap[[1]])
+phytools::plotSimmap(simmap[[1]], fsize=.5)
 
 ## ------------------------------------------------------------------------
 LegendAndRateMat <- getStateMat4Dat(data)

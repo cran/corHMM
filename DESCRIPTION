@@ -1,6 +1,6 @@
 Package: corHMM
-Version: 2.2
-Date: 2020-07-8
+Version: 2.3
+Date: 2020-07-31
 Title: Hidden Markov Models of Character Evolution
 Authors@R: c(person("Jeremy", "Beaulieu", role=c("aut", "cre"),
                      email = "jmbeauli@uark.edu"),
@@ -16,10 +16,10 @@ Description: Fits hidden Markov models of discrete character evolution which all
 License: GPL (>= 2)
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2020-07-08 20:53:42 UTC; jmbeauli
+Packaged: 2020-08-05 20:09:54 UTC; jmbeauli
 Author: Jeremy Beaulieu [aut, cre],
   Brian O'Meara [aut],
   Jeffrey Oliver [aut],
   James Boyko [aut]
 Repository: CRAN
-Date/Publication: 2020-07-08 22:40:09 UTC
+Date/Publication: 2020-08-05 21:20:02 UTC

@@ -23,30 +23,9 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
     
     #data consistency stuff
     input.data <- data
-    nCol <- dim(data)[2]
-    LevelList <- StateMats <- vector("list", nCol - 1)
-    for (i in 2:nCol) {
-        data[, i] <- as.factor(data[, i])
-        StateMats[[i - 1]] <- getStateMat(length(levels(data[, i])))
-        LevelList[[i - 1]] <- levels(as.factor(data[, i]))
-    }
-    if (nCol > 2) {
-        combined.data <- apply(data[, 2:nCol], 1, function(x) paste(c(x), collapse = "_"))
-        TraitList <- expand.grid(LevelList)
-        Traits <- levels(as.factor(apply(TraitList, 1, function(x) paste(x,  collapse = "_"))))
-        nTraits <- length(Traits)
-        nObs <- length(unique(combined.data))
-        data <- data.frame(sp = data[, 1], d = match(combined.data, Traits))
-        ObservedTraits <- which(1:nTraits %in% data[,2])
-        data[,2] <- match(data[,2], ObservedTraits)
-        names(Traits) <- 1:nTraits
-    }else {
-        Traits <- levels(as.factor(unique(data[, 2])))
-        nObs <- nTraits <- length(Traits)
-        data <- data.frame(sp = data[, 1], d = match(data[, 2], Traits))
-    }
-    
-    data[,2] <- as.numeric(data[,2])
+    corData <- corProcessData(data)
+    data <- corData$corData
+
     matching <- match.tree.data(phy,data)
     data <- matching$data
     phy <- matching$phy
@@ -58,19 +37,18 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
     levels <- levels(as.factor(data.sort[,1]))
     
     #Some initial values for use later
-    k=2
     obj <- NULL
     nb.tip <- length(phy$tip.label)
     nb.node <- phy$Nnode
     
-    ntraits <- length(levels)
+    k <- ntraits <- length(corData$ObservedTraits)
     drop.states = NULL
     if(is.null(rate.mat)){
-        model.set.final <- rate.cat.set.corHMM.JDB(phy=phy,data=input.data, rate.cat=rate.cat, ntraits = nObs, model = model)
+        model.set.final <- rate.cat.set.corHMM.JDB(phy=phy,data=input.data, rate.cat=rate.cat, ntraits = ntraits, model = model)
         rate.mat <- model.set.final$index.matrix
         rate <- model.set.final$rate
     }else{
-        model.set.final <- rate.cat.set.corHMM.JDB(phy=phy,data=input.data, rate.cat=rate.cat, ntraits = nObs, model = model)
+        model.set.final <- rate.cat.set.corHMM.JDB(phy=phy,data=input.data, rate.cat=rate.cat, ntraits = ntraits, model = model)
         rate <- rate.mat
         col.sums <- which(colSums(rate.mat, na.rm=TRUE) == 0)
         row.sums <- which(rowSums(rate.mat, na.rm=TRUE) == 0)
@@ -282,7 +260,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
             #Outputs likeliest node states
             obj$lik.anc.states <- lik.states[-TIPS]
             #Outputs the information gained (in bits) per node
-            obj$info.anc.states <- getInfoPerNode(obj$lik.anc.states)
+            obj$info.anc.states <- NULL
             return(obj)
         }
     }
@@ -420,7 +398,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
         }
         if(get.tip.states == TRUE){
             #Now get the states for the tips (will do, not available for general use):
-            liks.final[TIPS,] <- GetTipStateBruteForce(p=p, phy=phy, data=input.data, rate.mat=rate.mat, rate.cat=rate.cat, ntraits=nObs, model=model, root.p=root.p_input)
+            liks.final[TIPS,] <- GetTipStateBruteForce(p=p, phy=phy, data=input.data, rate.mat=rate.mat, rate.cat=rate.cat, ntraits=ntraits, model=model, root.p=root.p_input)
         }else{
             liks.final[TIPS,] <- liks.down[TIPS,]
         }
@@ -440,7 +418,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
             #Outputs likeliest node states
             obj$lik.anc.states <- liks.final[-TIPS,]
             #Outputs the information gained (in bits) per node
-            obj$info.anc.states <- getInfoPerNode(obj$lik.anc.states)
+            obj$info.anc.states <- getInfoPerNode(obj$lik.anc.states, Q)
             return(obj)
         }
     }
@@ -503,7 +481,7 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
         #Outputs likeliest node states
         obj$lik.anc.states <- liks[-TIPS,]
         #Outputs the information gained (in bits) per node
-        obj$info.anc.states <- getInfoPerNode(obj$lik.anc.states)
+        obj$info.anc.states <- NULL
         return(obj)
     }
 }
@@ -515,9 +493,11 @@ ancRECON <- function(phy, data, p, method=c("joint", "marginal", "scaled"), rate
 ######################################################################################################################################
 ######################################################################################################################################
 
-getInfoPerNode <- function(lik.anc.states){
-  nStates <- dim(lik.anc.states)[2]
-  H_uncond <- sum(1/nStates * -log2(rep(1/nStates, nStates)))
+getInfoPerNode <- function(lik.anc.states, Q){
+  Eq <- c(Null(Q))/sum(Null(Q))
+  #nStates <- dim(lik.anc.states)[2]
+  #H_uncond <- sum(1/nStates * -log2(rep(1/nStates, nStates)))
+  H_uncond <- sum(Eq * -log2(Eq))
   H_cond <- rowSums(lik.anc.states * -log2(lik.anc.states))
   Info <- H_uncond - H_cond
   return(Info)
