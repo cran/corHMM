@@ -1,3 +1,4 @@
+
 ---
 title: "corHMM 2.1: Generalized hidden Markov models"
 author: "James D. Boyko and Jeremy M. Beaulieu"
