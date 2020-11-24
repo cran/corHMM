@@ -6,7 +6,7 @@
 
 #written by Jeremy M. Beaulieu & Jeffrey C. Oliver
 
-rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled", "none"), state.recon=c("subsequently"), lewis.asc.bias=FALSE, p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, verbose=TRUE, diagn=FALSE){
+rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"), node.states=c("joint", "marginal", "scaled", "none"), state.recon=c("subsequently"), lewis.asc.bias=FALSE, p=NULL, root.p="yang", ip=NULL, lb=1e-9, ub=100, verbose=TRUE, diagn=FALSE){
 
 	# Checks to make sure node.states is not NULL.  If it is, just returns a diagnostic message asking for value.
 	if(is.null(node.states)){
@@ -268,7 +268,7 @@ rayDISC<-function(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","S
         lik.anc$lik.anc.states <- "You turned this feature off. Try plugging into ancRECON function directly."
         tip.states <- lik.anc$lik.tip.states
     }else{
-        
+      data.rayDISC[is.na(data.rayDISC)] <- "?"
         if(node.states == "marginal" || node.states == "scaled"){
             lik.anc <- ancRECON(phy, data.rayDISC, est.pars, rate.cat=NULL, rate.mat=rate.mat, ntraits=ntraits, method=node.states, model=model, root.p=root.p)
             pr <- apply(lik.anc$lik.anc.states,1,which.max)

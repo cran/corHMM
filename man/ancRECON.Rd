@@ -45,9 +45,11 @@ MK_3state <- corHMM(phy = phy, data = data, rate.cat = 1)
 params <- sapply(na.omit(c(MK_3state$index.mat)), 
 	function(x) na.omit(c(MK_3state$solution))[x])
 
-states <- ancRECON(phy = phy, data = MK_3state$data, p = params, method = "marginal", 
+# using custom params
+states_1 <- ancRECON(phy = phy, data = MK_3state$data, p = params, method = "marginal", 
 	rate.cat <- MK_3state$rate.cat, ntraits = NULL, rate.mat = MK_3state$index.mat, 
 	root.p = MK_3state$root.p)
+
 }
 }
 \references{

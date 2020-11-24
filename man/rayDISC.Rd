@@ -6,7 +6,7 @@
 \usage{
 rayDISC(phy,data, ntraits=1, charnum=1, rate.mat=NULL, model=c("ER","SYM","ARD"),
 node.states=c("joint", "marginal", "scaled", "none"), state.recon=c("subsequently"), 
-lewis.asc.bias=FALSE, p=NULL, root.p=NULL, ip=NULL, lb=0, ub=100, verbose=TRUE, 
+lewis.asc.bias=FALSE, p=NULL, root.p="yang", ip=NULL, lb=1e-9, ub=100, verbose=TRUE, 
 diagn=FALSE)
 }
 \arguments{
@@ -22,7 +22,7 @@ diagn=FALSE)
 \item{p}{a vector of transition rates. Allows the user to calculate the likelihood given a specified set of parameter values to specified as fixed and calculate the likelihood.}
 \item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{yang} and \dQuote{maddfitz} can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009), respectively (see details).}
 \item{ip}{initial values used for the likelihood search. Can be a single value or a vector of unique values for each parameter. The default is \code{ip=1}.}
-\item{lb}{lower bound for the likelihood search. The default is \code{lb=0}.}
+\item{lb}{lower bound for the likelihood search. The default is \code{lb=1e-9}.}
 \item{ub}{upper bound for the likelihood search. The default is \code{ub=100}.}
 \item{verbose}{a logical indicating whether progress should be printed to the screen.}
 \item{diagn}{logical indicating whether diagnostic tests should be performed. The default is \code{FALSE}.}

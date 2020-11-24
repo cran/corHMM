@@ -20,8 +20,9 @@ data.sort <- data.sort[phy$tip.label, ]
 tiplabels(pch = 16, col = data.sort[,1]+1, cex = 0.5)
 tiplabels(pch = 16, col = data.sort[,2]+3, cex = 0.5, offset = 0.5)
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 MK_3state <- corHMM(phy = phy, data = data, rate.cat = 1)
+load("corHMMResults.Rsave")
 MK_3state
 
 ## ------------------------------------------------------------------------
@@ -39,14 +40,12 @@ data = MK_3state$data
 model  = MK_3state$solution
 model[is.na(model)] <- 0
 diag(model) <- -rowSums(model)
-states = MK_3state$states
-tip.states = MK_3state$tip.states
 # run get simmap (can be plotted using phytools)
-simmap <- makeSimmap(tree= phy, tip.states = tip.states, states = states, model = model, nSim = 1, nCores = 1)
+simmap <- makeSimmap(tree=phy, data=data, model=model, rate.cat=1, nSim=1, nCores=1)
 # we import phytools plotSimmap for plotting
 phytools::plotSimmap(simmap[[1]], fsize=.5)
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 HMM_3state <- corHMM(phy = phy, data = data, rate.cat = 2, model = "SYM", get.tip.states = TRUE)
 HMM_3state
 
@@ -60,11 +59,9 @@ data = HMM_3state$data
 model  = HMM_3state$solution
 model[is.na(model)] <- 0
 diag(model) <- -rowSums(model)
-states = HMM_3state$states
-tip.states = HMM_3state$tip.states
 
 # run get simmap (can be plotted using phytools)
-simmap <- makeSimmap(tree= phy, tip.states = tip.states, states = states, model = model, nSim = 1, nCores = 1)
+simmap <- makeSimmap(tree=phy, data=data, model=model, rate.cat=2, nSim=1, nCores=1)
 
 # we import phytools plotSimmap for plotting
 phytools::plotSimmap(simmap[[1]], fsize=.5)
@@ -79,7 +76,7 @@ pars2equal <- list(c(1,2), c(3,4))
 StateMatA_constrained <- equateStateMatPars(RateMat, pars2equal)
 StateMatA_constrained
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 MK_3state_customSYM <- corHMM(phy = phy, data = data, rate.cat = 1, rate.mat = StateMatA_constrained)
 MK_3state_customSYM
 
@@ -107,7 +104,7 @@ FullMat
 ## ---- eval=FALSE---------------------------------------------------------
 #  plotMKmodel(FullMat, rate.cat = 2, display = "row", text.scale = 0.7)
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 HMM_3state_custom <- corHMM(phy = phy, data = data, rate.cat = 2, rate.mat = FullMat, node.states = "none")
 HMM_3state_custom
 
@@ -148,9 +145,9 @@ MFT_FullMat <- getFullMat(MFT_ObsStateClasses, MFT_RateClassMat)
 MFT_FullMat
 
 ## ---- eval=FALSE---------------------------------------------------------
-#  plotMKmodel(pp = MFT_FullMat, rate.cat = 3, display = "square", text.scale = 0.9)
+#  plotMKmodel(MFT_FullMat, rate.cat = 3, display = "square", text.scale = 0.9)
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 MFT_res.corHMM <- corHMM(phy = phy, data = MFT_dat, rate.cat = 3, rate.mat = MFT_FullMat, node.states = "none")
 MFT_res.corHMM
 
@@ -201,7 +198,7 @@ head(Ont_Dat)
 Ont_LegendAndMat <- getStateMat4Dat(Ont_Dat)
 Ont_LegendAndMat
 
-## ------------------------------------------------------------------------
+## ---- eval=-1------------------------------------------------------------
 Ont_res.corHMM <- corHMM(phy = phy, data = Ont_Dat, rate.cat = 1, rate.mat = Ont_LegendAndMat$rate.mat, node.states = "none")
 
 ## ---- eval=TRUE----------------------------------------------------------
