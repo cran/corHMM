@@ -1,4 +1,4 @@
-104ac8b55ebbe4d2781d1bf843583b43 *DESCRIPTION
+a9a3182c2fd678e3cb0be667908016ac *DESCRIPTION
 bb8e15e887027e2f840c29065284da4c *NAMESPACE
 7a9b7ac577781afe2d45ad40a1dea918 *R/ancRECON.R
 ccada179a566120a0448142b00e9b179 *R/convertPhangorn.R
@@ -20,14 +20,14 @@ b2614076f04235f8b55c05f91b2319fd *inst/doc/corHMMv2.1-vignette.pdf
 1b0c4bc750620e2eefaf7e258c014133 *man/ConvertPhangornReconstructions.Rd
 8479bd0f7a7760fe403f4dd029965646 *man/ancRECON.Rd
 705bdca4f9b48ba8ee6e1cf2097217da *man/corDISC.Rd
-da5a0cf121f3a687aa9ed4f2585586e5 *man/corHMM.Rd
+bf92d7fd60e10bdd116bbb757761c3fc *man/corHMM.Rd
 d33803a77734da2957e09db35e804ba7 *man/getFullMat.Rd
 37cdb086c639f740dffadecb84861638 *man/getRateMat4Dat.Rd
 bd797a55a2f4633e06cf27171a8274ca *man/makeSimmap.Rd
 feebf2b0cc2f325f86f6f311d533dea4 *man/plotMKmodel.Rd
 ea6de2c957903e9a570d4cbc03719aca *man/plotRECON.Rd
 e5f4e5e602dd8118bec3c20a91842218 *man/primates.Rd
-a040b1b82be78c437569fa21bba95dd2 *man/rayDISC.Rd
+046b79e19ebb2c9b988f3ee9f287b4ea *man/rayDISC.Rd
 59c60786146a44865dd0f49dff4a7221 *tests/testthat.R
 b1cff229bcbbab46503fd6589788111f *tests/testthat/res_old.corhmm.Rsave
 35c2c5e7576504328991983a27b7f45f *tests/testthat/testlikelihood.R
