@@ -361,6 +361,10 @@ MK_3state
 ##       -lnL      AIC     AICc Rate.cat ntax
 ##  -41.90867 91.81735 92.54462        1   60
 ## 
+## Legend
+##     1     2     3 
+## &quot;0_0&quot; &quot;0_1&quot; &quot;1_1&quot; 
+## 
 ## Rates
 ##            (1,R1)     (2,R1)     (3,R1)
 ## (1,R1)         NA 0.01899834         NA
@@ -446,6 +450,10 @@ HMM_3state
 ## Fit
 ##       -lnL      AIC     AICc Rate.cat ntax
 ##  -41.54993 95.09986 96.68477        2   60
+## 
+## Legend
+##     1     2     3 
+## &quot;0_0&quot; &quot;0_1&quot; &quot;1_1&quot; 
 ## 
 ## Rates
 ##            (1,R1)     (2,R1)     (3,R1)      (1,R2)      (2,R2)     (3,R2)
@@ -538,6 +546,10 @@ MK_3state_customSYM
 ## Fit
 ##       -lnL     AIC     AICc Rate.cat ntax
 ##  -44.36715 92.7343 92.94482        1   60
+## 
+## Legend
+##     1     2     3 
+## &quot;0_0&quot; &quot;0_1&quot; &quot;1_1&quot; 
 ## 
 ## Rates
 ##            (1,R1)     (2,R1)     (3,R1)
@@ -640,6 +652,10 @@ HMM_3state_custom
 ## Fit
 ##       -lnL      AIC     AICc Rate.cat ntax
 ##  -42.23859 94.47717 95.58828        2   60
+## 
+## Legend
+##     1     2     3 
+## &quot;0_0&quot; &quot;0_1&quot; &quot;1_1&quot; 
 ## 
 ## Rates
 ##            (1,R1)     (2,R1)     (3,R1)     (1,R2)      (2,R2)     (3,R2)
@@ -781,7 +797,7 @@ MFT_FullMat
 <p>To run this model, we would only need to specify 1) the data, 2) the phylogeny, 3) this matrix, and 4) that this matrix has 3 rate categories:</p>
 
 <pre><code class="r">## MFT_res.corHMM &lt;- corHMM(phy = phy, data = MFT_dat, rate.cat = 3, rate.mat = MFT_FullMat, 
-##     node.states = &quot;none&quot;)
+##     node.states = &quot;none&quot;, root.p = &quot;maddfitz&quot;)
 MFT_res.corHMM
 </code></pre>
 
@@ -789,6 +805,10 @@ MFT_res.corHMM
 ## Fit
 ##       -lnL      AIC    AICc Rate.cat ntax
 ##  -56.60587 143.2117 148.926        3  100
+## 
+## Legend
+##             1             2             3 
+##  &quot;Freshwater&quot;      &quot;Marine&quot; &quot;Terrestrial&quot; 
 ## 
 ## Rates
 ##             (1,R1)      (2,R1)       (3,R1)      (1,R2)    (2,R2)
@@ -903,7 +923,8 @@ Precur_FullMat
 
 <p>We now run <code>corHMM()</code> making sure to specify that we have 2 rate categories (or rate classes or hidden states - it&#39;s all the same).</p>
 
-<pre><code class="r">Precur_res.corHMM &lt;- corHMM(phy = phy, data = Precur_Dat, rate.cat = 2, rate.mat = Precur_FullMat)
+<pre><code class="r">Precur_res.corHMM &lt;- corHMM(phy = phy, data = Precur_Dat, rate.cat = 2, rate.mat = Precur_FullMat, 
+    root.p = &quot;maddfitz&quot;)
 </code></pre>
 
 <pre><code>## State distribution in data:
@@ -921,8 +942,12 @@ Precur_FullMat
 
 <pre><code>## 
 ## Fit
-##       -lnL      AIC     AICc Rate.cat ntax
-##  -63.72976 131.4595 131.5832        2  100
+##      -lnL      AIC     AICc Rate.cat ntax
+##  -63.3243 130.6486 130.7723        2  100
+## 
+## Legend
+##   1   2 
+## &quot;0&quot; &quot;1&quot; 
 ## 
 ## Rates
 ##        (1,R1) (2,R1)      (1,R2)   (2,R2)
@@ -1066,6 +1091,10 @@ fix.node64.noestrus &lt;- corHMM(phy, data[, c(1, 2)], model = &quot;ER&quot;, r
 ##       -lnL      AIC     AICc Rate.cat ntax
 ##  -22.22758 46.45517 46.52414        1   60
 ## 
+## Legend
+##   1   2 
+## &quot;0&quot; &quot;1&quot; 
+## 
 ## Rates
 ##             (1,R1)      (2,R1)
 ## (1,R1)          NA 0.008338577
@@ -1119,6 +1148,10 @@ nodelabels(phy$node.label)
 ## Fit
 ##       -lnL      AIC     AICc Rate.cat ntax
 ##  -65.76361 133.5272 133.5962        1   60
+## 
+## Legend
+##   1   2 
+## &quot;0&quot; &quot;1&quot; 
 ## 
 ## Rates
 ##            (1,R1)     (2,R1)

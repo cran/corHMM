@@ -5,7 +5,8 @@
 \usage{
 corHMM(phy, data, rate.cat, rate.mat=NULL, model = "ARD", node.states = "marginal", 
 fixed.nodes=FALSE, p=NULL, root.p="yang", ip=NULL, nstarts=0, n.cores=1, 
-get.tip.states = FALSE, lewis.asc.bias = FALSE, lower.bound = 1e-9, upper.bound = 100)
+get.tip.states = FALSE, lewis.asc.bias = FALSE, collapse = TRUE, lower.bound = 1e-9, 
+upper.bound = 100)
 }
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format.}
@@ -22,6 +23,7 @@ get.tip.states = FALSE, lewis.asc.bias = FALSE, lower.bound = 1e-9, upper.bound 
 \item{n.cores}{the number of processor cores to spread out the random restarts.}
 \item{get.tip.states}{a boolean indicating whether tip reconstructions should be output. The default is \code{FALSE}.}
 \item{lewis.asc.bias}{a boolean indicating whether to correct for observing a dataset that is not univariate. The default is \code{FALSE}}.
+\item{collapse}{a boolean indicating whether to collapse multiple character combinations into only the observed states. For example, if true a two character dataset contained (0,0), (1,0), and (1,1), this would be collapsed into 1,2,3. However, if set to false it would 1,2,4. In combination with a custom rate matrix this allows for the estimation of transitions between the unobserved character combination. The default is \code{TRUE}}.
 \item{lower.bound}{lower bound for the likelihood search. The default is \code{lower.bound=1e-9}.}
 \item{upper.bound}{upper bound for the likelihood search. The default is \code{upper.bound=100}.}
 }
@@ -45,7 +47,7 @@ Ancestral states can be estimated using marginal, joint, scaled, or none approac
 \item{$AICc}{Akaike information criterion corrected for sample size.}
 \item{$rate.cat}{The number of rate categories specified.}
 \item{$solution}{a matrix containing the maximum likelihood estimates of the transition rates. Note that the rate classes are ordered from slowest (R1) to fastest (Rn) with respect to state 0.}
-\item{$index.mat}{The indices of the parameters being estimated are returned}
+\item{$index.mat}{The indices of the parameters being estimated are returned. This also is a way to allow the estimation of transition rates for parameters not oberved in the dataset. Say you have 2 traits X and Y, where the combinations 00, 01, and 11 are observed (10 is not). A 4 by 4 index matrix could be used to force 10 into the model.}
 \item{$data}{User-supplied dataset.}
 \item{$data.legend}{User-supplied dataset with an extra column of trait values corresponding to how corHMM calls the user data.}
 \item{$phy}{User-supplied tree.}
@@ -66,6 +68,8 @@ MK_3state
 }
 \references{
 Beaulieu J.M., B.C. O'Meara, and M.J. Donoghue. 2013. Identifying hidden rate changes in the evolution of a binary morphological character: the evolution of plant habit in campanulid angiosperms. Systematic Biology 62:725-737.
+
+Boyko, J. D., and J. M. Beaulieu. 2021. Generalized hidden Markov models for phylogenetic comparative datasets. Methods in Ecology and Evolution 12:468-478.
 
 Felsenstein, J. 1981. A likelihood approach to character weighting and what it tells us about parsimony and compatibility. Biological Journal of the Linnean Society 16: 183-196.
 

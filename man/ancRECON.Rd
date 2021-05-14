@@ -5,7 +5,7 @@
 \usage{
 ancRECON(phy,data, p, method=c("joint", "marginal", "scaled"),
 rate.cat, ntraits=NULL, rate.mat=NULL,
-model="ARD", root.p=NULL, get.likelihood=FALSE, get.tip.states = FALSE)
+model="ARD", root.p=NULL, get.likelihood=FALSE, get.tip.states = FALSE, collapse = TRUE)
 }       
 \arguments{
 \item{phy}{a phylogenetic tree, in \code{ape} \dQuote{phylo} format.}
@@ -19,6 +19,7 @@ model="ARD", root.p=NULL, get.likelihood=FALSE, get.tip.states = FALSE)
 \item{root.p}{a vector used to fix the probabilities at the root, but \dQuote{yang} and \dQuote{maddfitz} can also be supplied to use the method of Yang (2006) and FitzJohn et al (2009) respectively (see details).}
 \item{get.likelihood}{a logical indicating whether to obtain the likelihood of the rates and states. The default is \code{FALSE}.}
 \item{get.tip.states}{a logical indicating whether just tip reconstructions should be output. The default is \code{FALSE}.}
+\item{collapse}{a boolean indicating whether to collapse multiple character combinations into only the observed states. For example, if true a two character dataset contained (0,0), (1,0), and (1,1), this would be collapsed into 1,2,3. However, if set to false it would 1,2,4. In combination with a custom rate matrix this allows for the estimation of transitions between the unobserved character combination. The default is \code{TRUE}}.
 }
 \details{
 This is a stand alone function for computing the marginal, joint, or scaled likelihoods of internal nodes for a given set of transition rates. Like all other functions contained in corHMM, the tree does not have to be bifurcating in order for analyses to be carried out. IMPORTANT: If the corDISC, corHMM, and rayDISC functions are used they automatically provide a tree with the likeliest states as internal node labels. This function is intended for circumstances where the user would like to reconstruct states based on rates estimated elsewhere (e.g. BayesTraits, Mesquite, \code{ape}).
@@ -31,8 +32,8 @@ Setting get.likelihood=TRUE will provide the user the joint likelihood of the ra
 }
 \value{
 \item{$lik.tip.states}{A matrix of the reconstructed tip values. If the number of rate.cats is greater than 2 then the probability that each observed state is in a particular hidden state is given.}
-\item{$lik.anc.states}{For \code{joint}, a vector of likeliest states at internal nodes and tips. For either \code{marginal} or \code{scaled}, a matrix of the probabilities of each state for each internal node are returned.}
-\item{info.anc.states}{A vector containing the amount of information (in bits) that the tip states and model gives to each node.}
+\item{$lik.anc.states}{For \code{joint}, a vector of likeliest states at internal nodes and tips. For either \code{marginal} or \code{$scaled}, a matrix of the probabilities of each state for each internal node are returned.}
+\item{$info.anc.states}{A vector containing the amount of information (in bits) that the tip states and model gives to each node. See Boyko and Beaulieu (2021).}
 }
 \examples{
 \donttest{
@@ -62,6 +63,8 @@ Pupko, T., I. Pe'er, R. Shamir, and D. Graur. 2000. A fast algorithm for joint r
 Pupko, T., I. Pe'er, D. Graur, M. Hasegawa, and N Friedman N. 2002. A branch-and-bound algorithm for the inference of ancestral amino-acid sequences when the replacement rate varies among sites: application to the evolution of five gene families. Bioinformatics 18:1116-1123.
 
 Yang, Z. 2006. Computational Molecular Evolution. London:Oxford.
+
+Boyko, J. D., and J. M. Beaulieu. 2021. Generalized hidden Markov models for phylogenetic comparative datasets. Methods in Ecology and Evolution 12:468-478.
 }
 
 \author{Jeremy M. Beaulieu and Jeffrey C. Oliver}

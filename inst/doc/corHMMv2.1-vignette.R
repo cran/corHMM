@@ -148,7 +148,7 @@ MFT_FullMat
 #  plotMKmodel(MFT_FullMat, rate.cat = 3, display = "square", text.scale = 0.9)
 
 ## ---- eval=-1------------------------------------------------------------
-MFT_res.corHMM <- corHMM(phy = phy, data = MFT_dat, rate.cat = 3, rate.mat = MFT_FullMat, node.states = "none")
+MFT_res.corHMM <- corHMM(phy = phy, data = MFT_dat, rate.cat = 3, rate.mat = MFT_FullMat, node.states = "none", root.p = "maddfitz")
 MFT_res.corHMM
 
 ## ------------------------------------------------------------------------
@@ -179,7 +179,7 @@ Precur_FullMat[c(4,2), c(2,4)] <- 0
 Precur_FullMat
 
 ## ------------------------------------------------------------------------
-Precur_res.corHMM <- corHMM(phy = phy, data = Precur_Dat, rate.cat = 2, rate.mat = Precur_FullMat)
+Precur_res.corHMM <- corHMM(phy = phy, data = Precur_Dat, rate.cat = 2, rate.mat = Precur_FullMat, root.p = "maddfitz")
 Precur_res.corHMM
 
 ## ------------------------------------------------------------------------
